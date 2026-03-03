@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MAIL_DOMAIN=${MAIL_DOMAIN:-ismyemailspam.com}
+      - MAIL_DOMAIN=${MAIL_DOMAIN:-checkemaildelivery.com}
       - UPSTASH_REDIS_URL=${UPSTASH_REDIS_URL}
       - UPSTASH_REDIS_TOKEN=${UPSTASH_REDIS_TOKEN}
       - RESEND_WEBHOOK_SECRET=${RESEND_WEBHOOK_SECRET}

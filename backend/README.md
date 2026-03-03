@@ -218,6 +218,6 @@ https://your-api.up.railway.app/api/webhook/resend
 | `Connection refused` on port 783 | SpamAssassin not running. Use Docker or set `SPAMASSASSIN_HOST=localhost` (graceful fallback) |
 | Redis errors | Check `UPSTASH_REDIS_URL` and `UPSTASH_REDIS_TOKEN` in `.env` |
 | Webhook not receiving emails | Check Resend webhook URL + MX records. Use ngrok for local dev |
-| Rate limit hit (429) | Max 3 tests/day per IP. Wait 24h or clear Redis |
+| Rate limit hit (429) | Max 5 tests/day per IP. Wait 24h or clear Redis |
 | CORS errors in browser | Check `FRONTEND_URL` matches your frontend origin exactly |
 | Docker build fails on Windows | Make sure Docker Desktop is running with WSL2 backend |
