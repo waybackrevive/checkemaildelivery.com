@@ -6,6 +6,11 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Log API base URL in development for debugging
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  console.log("[API] Base URL:", API_BASE);
+}
+
 class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -16,17 +21,26 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  try {
+    const url = `${API_BASE}${path}`;
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new ApiError(body || `Request failed: ${res.status}`, res.status);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new ApiError(body || `Request failed: ${res.status}`, res.status);
+    }
+
+    return res.json();
+  } catch (err) {
+    // If it's already an ApiError, rethrow it
+    if (err instanceof ApiError) throw err;
+    
+    // Network errors (CORS, connection failed, etc.)
+    throw new Error(err instanceof Error ? err.message : "Network error");
   }
-
-  return res.json();
 }
 
 /**

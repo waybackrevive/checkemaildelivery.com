@@ -58,10 +58,15 @@ export default function HomePage() {
         setTestId(data.id);
       })
       .catch((err) => {
+        console.error("[handleStartTest] Error:", err);
+        console.error("[handleStartTest] API URL:", process.env.NEXT_PUBLIC_API_URL || "undefined (using default)");
+        
         if (err instanceof ApiError && err.status === 429) {
           setErrorMsg("RATE_LIMIT");
+        } else if (err.message?.includes("Failed to fetch") || err.name === "TypeError") {
+          setErrorMsg("Cannot connect to server. Please check your internet connection or try again later.");
         } else {
-          setErrorMsg("Something went wrong. Please try again in a moment.");
+          setErrorMsg(err.message || "Something went wrong. Please try again in a moment.");
         }
       })
       .finally(() => setLoading(false));
