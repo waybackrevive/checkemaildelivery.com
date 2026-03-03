@@ -26,18 +26,18 @@ from typing import Optional
 
 from fastapi import APIRouter, Request, HTTPException
 
-from backend.config import settings
-from backend.models.schemas import TestStatus, CheckStatus
-from backend.storage.redis_client import (
+from config import settings
+from models.schemas import TestStatus, CheckStatus
+from storage.redis_client import (
     get_test_session,
     update_test_session,
     save_report,
 )
-from backend.services.header_parser import parse_headers
-from backend.services.content_analyzer import analyze_content
-from backend.services.blacklist_checker import check_reputation
-from backend.services.spamassassin import check_spam
-from backend.services.report_builder import build_report
+from services.header_parser import parse_headers
+from services.content_analyzer import analyze_content
+from services.blacklist_checker import check_reputation
+from services.spamassassin import check_spam
+from services.report_builder import build_report
 
 logger = logging.getLogger(__name__)
 

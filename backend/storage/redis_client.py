@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from upstash_redis import Redis
 
-from backend.config import settings
+from config import settings
 
 
 # Singleton connection — initialized once, reused everywhere

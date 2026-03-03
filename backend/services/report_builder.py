@@ -10,7 +10,7 @@ This is the second key file of custom code we write.
 from datetime import datetime, timezone
 from typing import List
 
-from backend.models.schemas import (
+from models.schemas import (
     ActionItem,
     AuthenticationResult,
     CheckStatus,
@@ -19,7 +19,7 @@ from backend.models.schemas import (
     ReputationResult,
     SpamAssassinResult,
 )
-from backend.services.score_calculator import (
+from services.score_calculator import (
     calculate_final_score,
     get_risk_level,
     get_risk_summary,

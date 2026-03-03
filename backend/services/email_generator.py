@@ -6,7 +6,7 @@ Format: test-{random_hex}@{domain}
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from backend.config import settings
+from config import settings
 
 
 def generate_test_id() -> str:

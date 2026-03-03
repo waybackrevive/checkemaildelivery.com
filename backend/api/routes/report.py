@@ -6,8 +6,8 @@ GET /api/report/{id} → Full report JSON for the frontend to render
 
 from fastapi import APIRouter, HTTPException
 
-from backend.models.schemas import EmailReport
-from backend.storage.redis_client import get_report
+from models.schemas import EmailReport
+from storage.redis_client import get_report
 
 router = APIRouter(prefix="/api/report", tags=["report"])
 

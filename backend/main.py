@@ -10,8 +10,8 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import settings
-from backend.api.routes import test, webhook, report
+from config import settings
+from api.routes import test, webhook, report
 
 # Configure logging
 logging.basicConfig(

@@ -15,7 +15,7 @@ from typing import List, Optional, Tuple
 import dns.resolver
 import dns.reversename
 
-from backend.models.schemas import BlacklistEntry, CheckStatus, ReputationResult
+from models.schemas import BlacklistEntry, CheckStatus, ReputationResult
 
 
 # Load blacklists config

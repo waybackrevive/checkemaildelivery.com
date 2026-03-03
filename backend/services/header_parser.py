@@ -17,7 +17,7 @@ import dkim
 import spf
 import checkdmarc
 
-from backend.models.schemas import AuthCheck, AuthenticationResult, CheckStatus
+from models.schemas import AuthCheck, AuthenticationResult, CheckStatus
 
 
 def _extract_sender_info(raw_email: str) -> Tuple[str, str, str]:

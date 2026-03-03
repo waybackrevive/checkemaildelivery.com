@@ -54,8 +54,7 @@ docker-compose up --build
 **Option B — Without Docker (SpamAssassin skipped, everything else works):**
 ```bash
 pip install -r requirements.txt python-dotenv
-cd ..
-python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Verify: open `http://localhost:8000/health` → you should see `{"status":"ok"}`

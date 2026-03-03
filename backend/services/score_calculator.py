@@ -11,7 +11,7 @@ This is one of the ~4 files of custom code we actually write.
 Everything else uses open-source libraries.
 """
 
-from backend.models.schemas import (
+from models.schemas import (
     AuthenticationResult,
     ContentResult,
     ReputationResult,

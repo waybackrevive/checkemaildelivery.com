@@ -9,8 +9,8 @@ We use a simple TCP connection to talk to it (spamc protocol).
 import socket
 from typing import List, Tuple
 
-from backend.config import settings
-from backend.models.schemas import CheckStatus, SpamAssassinResult
+from config import settings
+from models.schemas import CheckStatus, SpamAssassinResult
 
 
 def _spamc_check(raw_email: str) -> Tuple[float, List[str]]:

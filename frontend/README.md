@@ -45,8 +45,9 @@ The frontend needs the backend. In a separate terminal:
 cd backend && docker-compose up
 
 # Option B: Without Docker
-pip install -r backend/requirements.txt python-dotenv
-python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+pip install -r requirements.txt python-dotenv
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ---

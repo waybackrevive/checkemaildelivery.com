@@ -9,9 +9,9 @@ from datetime import datetime
 
 from fastapi import APIRouter, Request, HTTPException
 
-from backend.models.schemas import CreateTestResponse, TestStatusResponse, TestStatus
-from backend.services.email_generator import generate_test_id, create_test_session
-from backend.storage.redis_client import (
+from models.schemas import CreateTestResponse, TestStatusResponse, TestStatus
+from services.email_generator import generate_test_id, create_test_session
+from storage.redis_client import (
     save_test_session,
     get_test_session,
     check_rate_limit,

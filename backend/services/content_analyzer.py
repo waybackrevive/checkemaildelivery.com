@@ -21,7 +21,7 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
-from backend.models.schemas import CheckStatus, ContentResult, SpamWord
+from models.schemas import CheckStatus, ContentResult, SpamWord
 
 
 # Load spam words database once at module level
