@@ -47,7 +47,7 @@ router = APIRouter(prefix="/api/webhook", tags=["webhook"])
 def _extract_test_id(recipient: str) -> Optional[str]:
     """
     Extract test ID from recipient address.
-    test-7a2b4f8e@ismyemailspam.com → 7a2b4f8e
+    test-7a2b4f8e@checkemaildelivery.com → 7a2b4f8e
     """
     match = re.match(r"test-([a-f0-9]+)@", recipient)
     return match.group(1) if match else None

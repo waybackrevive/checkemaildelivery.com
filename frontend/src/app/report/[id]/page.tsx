@@ -1,640 +1,560 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Mail,
-  Shield,
-  Globe,
-  FileText,
-  Bug,
-  Wrench,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  ExternalLink,
-  Loader2,
-} from "lucide-react";
 import { getReport } from "@/lib/api";
-import type { EmailReport, CheckStatus, ActionItem } from "@/types/report";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Collapsible } from "@/components/ui/collapsible";
-import { Alert } from "@/components/ui/alert";
-import {
-  getScoreColor,
-  getScoreBg,
-  getScoreLabel,
-  getStatusBadgeVariant,
-  formatScore,
-} from "@/lib/score";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import type {
+  EmailReport,
+  CheckStatus,
+  AuthCheck,
+  ActionItem,
+} from "@/types/report";
 
-// ---------------------------------------------------------------------------
-// Status icon helper
-// ---------------------------------------------------------------------------
-function StatusIcon({ status }: { status: CheckStatus }) {
-  switch (status) {
-    case "pass":
-      return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-    case "warning":
-      return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-    case "fail":
-      return <XCircle className="h-5 w-5 text-red-600" />;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Score Hero — big score at the top
-// ---------------------------------------------------------------------------
-function ScoreHero({ report }: { report: EmailReport }) {
-  const colorClass = getScoreColor(report.final_score);
-  const bgClass = getScoreBg(report.final_score);
-
+/* ─── helpers ─── */
+function statusBadge(status: CheckStatus, label?: string) {
+  const map: Record<CheckStatus, { bg: string; border: string; text: string; fallback: string }> = {
+    pass:    { bg: "bg-brand-light", border: "border-brand/20",  text: "text-brand",  fallback: "✓ PASS" },
+    fail:    { bg: "bg-danger-light", border: "border-danger/20", text: "text-danger", fallback: "✕ FAIL" },
+    warning: { bg: "bg-warn-light", border: "border-warn/25",   text: "text-warn",   fallback: "⚠ WARNING" },
+  };
+  const s = map[status];
   return (
-    <Card className="mb-8">
-      <CardContent className="p-8">
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          {/* Score circle */}
-          <div className="relative">
-            <div className="w-36 h-36 rounded-full border-8 border-gray-100 flex items-center justify-center">
-              <div className="text-center">
-                <div className={`text-4xl font-bold ${colorClass}`}>
-                  {report.final_score}
-                </div>
-                <div className="text-sm text-gray-500">out of 100</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div className="flex-1 text-center md:text-left">
-            <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-              <Badge
-                variant={getStatusBadgeVariant(
-                  report.risk_level === "low"
-                    ? "pass"
-                    : report.risk_level === "medium"
-                    ? "warning"
-                    : "fail"
-                )}
-              >
-                {getScoreLabel(report.final_score)}
-              </Badge>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Your Email Deliverability Score
-            </h1>
-            <p className="text-gray-600">{report.risk_summary}</p>
-            <div className="mt-4 text-sm text-gray-400">
-              Tested: {new Date(report.tested_at).toLocaleString()} •{" "}
-              From: {report.from_address}
-            </div>
-          </div>
-        </div>
-
-        {/* Section score bars */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Authentication",
-              score: report.authentication.score,
-              icon: Shield,
-            },
-            {
-              label: "Reputation",
-              score: report.reputation.score,
-              icon: Globe,
-            },
-            {
-              label: "Content",
-              score: report.content.score,
-              icon: FileText,
-            },
-            {
-              label: "SpamAssassin",
-              score: report.spamassassin.section_score,
-              icon: Bug,
-            },
-          ].map((section) => (
-            <div key={section.label} className="text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <section.icon className="h-4 w-4 text-gray-400" />
-                <span className="text-xs text-gray-500">{section.label}</span>
-              </div>
-              <div className={`text-lg font-bold ${getScoreColor(section.score)}`}>
-                {Math.round(section.score)}
-              </div>
-              <Progress
-                value={section.score}
-                className="h-2 mt-1"
-                indicatorClassName={bgClass}
-              />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <span className={`font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.text}`}>
+      {label || s.fallback}
+    </span>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Authentication Section
-// ---------------------------------------------------------------------------
-function AuthSection({ report }: { report: EmailReport }) {
-  const { authentication } = report;
+function scoreBarColor(score: number) {
+  if (score >= 80) return "score-bar-green";
+  if (score >= 50) return "score-bar-amber";
+  return "score-bar-red";
+}
 
+function riskBadge(level: string) {
+  const m: Record<string, { icon: string; label: string; bg: string; border: string; color: string }> = {
+    low:    { icon: "✅", label: "Low Risk",    bg: "rgba(14,166,110,0.2)", border: "rgba(14,166,110,0.4)", color: "var(--color-brand)" },
+    medium: { icon: "⚠️", label: "Medium Risk", bg: "rgba(245,158,11,0.2)", border: "rgba(245,158,11,0.4)", color: "var(--color-warn)" },
+    high:   { icon: "🚨", label: "High Risk",   bg: "rgba(229,55,58,0.2)", border: "rgba(229,55,58,0.4)", color: "var(--color-danger)" },
+  };
+  const r = m[level] || m.medium;
   return (
-    <Collapsible
-      title="Email Authentication"
-      defaultOpen={authentication.score < 100}
-      icon={<Shield className="h-5 w-5 text-blue-600" />}
-      badge={
-        <Badge variant={getStatusBadgeVariant(
-          authentication.score >= 80 ? "pass" : authentication.score >= 50 ? "warning" : "fail"
-        )}>
-          {formatScore(authentication.score)}
-        </Badge>
-      }
-      className="mb-4"
-    >
-      <div className="space-y-3">
-        {authentication.checks.map((check) => (
-          <div
-            key={check.name}
-            className="flex items-start gap-3 p-3 rounded-lg bg-gray-50"
-          >
-            <StatusIcon status={check.status} />
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-900">{check.name}</span>
-                <Badge variant={getStatusBadgeVariant(check.status)} className="text-xs">
-                  {check.status.toUpperCase()}
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-600 mt-1">{check.description}</p>
-              {check.details && (
-                <p className="text-xs text-gray-400 mt-1 font-mono">
-                  {check.details}
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </Collapsible>
+    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: r.bg, border: `1px solid ${r.border}`, color: r.color }}>
+      {r.icon} {r.label}
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Reputation Section
-// ---------------------------------------------------------------------------
-function ReputationSection({ report }: { report: EmailReport }) {
-  const { reputation } = report;
+function countStats(report: EmailReport) {
+  let critical = 0, warnings = 0, passed = 0;
+  report.action_plan.forEach((a) => { if (a.status === "fail") critical++; else if (a.status === "warning") warnings++; });
+  report.authentication.checks.forEach((c) => { if (c.status === "pass") passed++; });
+  // reputation items
+  if (report.reputation.ip_blacklist_count === 0) passed++;
+  if (report.reputation.domain_blacklist_count === 0) passed++;
+  if (report.reputation.domain_age_status === "pass") passed++;
+  // content items
+  if (!report.content.subject_has_caps) passed++;
+  if (report.content.spam_word_count === 0) passed++;
+  if (report.content.image_ratio_status === "pass") passed++;
+  if (report.content.links_valid) passed++;
+  if (!report.content.has_url_shorteners) passed++;
+  if (report.content.spamassassin_status === "pass") passed++;
+  return { critical, warnings, passed };
+}
 
+/* ─── CopyIcon ─── */
+function CopyIcon() {
   return (
-    <Collapsible
-      title="Sender Reputation"
-      defaultOpen={reputation.score < 100}
-      icon={<Globe className="h-5 w-5 text-blue-600" />}
-      badge={
-        <Badge variant={getStatusBadgeVariant(
-          reputation.score >= 80 ? "pass" : reputation.score >= 50 ? "warning" : "fail"
-        )}>
-          {formatScore(reputation.score)}
-        </Badge>
-      }
-      className="mb-4"
-    >
-      <div className="space-y-4">
-        {/* IP Blacklists */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            IP Blacklists ({reputation.ip_blacklist_count} found)
-          </h4>
-          {reputation.ip_blacklist_count === 0 ? (
-            <p className="text-sm text-green-600">
-              ✓ Your IP is not on any blacklists
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {reputation.ip_blacklists
-                .filter((bl) => bl.listed)
-                .map((bl) => (
-                  <div
-                    key={bl.list_name}
-                    className="flex items-center gap-2 text-sm text-red-600"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    {bl.list_name}
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-
-        {/* Domain Blacklists */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Domain Blacklists ({reputation.domain_blacklist_count} found)
-          </h4>
-          {reputation.domain_blacklist_count === 0 ? (
-            <p className="text-sm text-green-600">
-              ✓ Your domain is not on any blacklists
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {reputation.domain_blacklists
-                .filter((bl) => bl.listed)
-                .map((bl) => (
-                  <div
-                    key={bl.list_name}
-                    className="flex items-center gap-2 text-sm text-red-600"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    {bl.list_name}
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-
-        {/* Domain Age */}
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
-          <StatusIcon status={reputation.domain_age_status} />
-          <div>
-            <span className="font-medium text-gray-900 text-sm">Domain Age</span>
-            <p className="text-sm text-gray-600">{reputation.domain_age_description}</p>
-            {reputation.domain_age_days !== null && reputation.domain_age_days !== undefined && (
-              <p className="text-xs text-gray-400 mt-1">
-                {reputation.domain_age_days} days old
-              </p>
-            )}
-          </div>
-        </div>
-
-        {reputation.sending_ip && (
-          <p className="text-xs text-gray-400">Sending IP: {reputation.sending_ip}</p>
-        )}
-      </div>
-    </Collapsible>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+      <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2H3.5A1.5 1.5 0 0 0 2 3.5V9.5A1.5 1.5 0 0 0 3.5 11H5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Content Section
-// ---------------------------------------------------------------------------
-function ContentSection({ report }: { report: EmailReport }) {
-  const { content } = report;
-
+/* ─── Section Component ─── */
+function Section({
+  icon,
+  title,
+  issueCount,
+  issueType,
+  children,
+  defaultOpen = true,
+}: {
+  icon: string;
+  title: string;
+  issueCount?: number;
+  issueType?: "critical" | "warn";
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <Collapsible
-      title="Content Analysis"
-      defaultOpen={content.score < 100}
-      icon={<FileText className="h-5 w-5 text-blue-600" />}
-      badge={
-        <Badge variant={getStatusBadgeVariant(
-          content.score >= 80 ? "pass" : content.score >= 50 ? "warning" : "fail"
-        )}>
-          {formatScore(content.score)}
-        </Badge>
-      }
-      className="mb-4"
-    >
-      <div className="space-y-4">
-        {/* Subject Line */}
-        <div className="p-3 rounded-lg bg-gray-50">
-          <div className="flex items-center gap-2 mb-1">
-            <StatusIcon status={content.subject_has_caps ? "warning" : "pass"} />
-            <span className="font-medium text-gray-900 text-sm">Subject Line</span>
-          </div>
-          <p className="text-sm text-gray-600 ml-7">&quot;{content.subject_line}&quot;</p>
-          {content.subject_has_caps && (
-            <p className="text-xs text-orange-600 ml-7 mt-1">
-              ⚠ Using ALL CAPS in subject — this triggers spam filters
-            </p>
-          )}
-        </div>
-
-        {/* Spam Words */}
-        <div className="p-3 rounded-lg bg-gray-50">
-          <div className="flex items-center gap-2 mb-2">
-            <StatusIcon status={content.spam_word_count > 3 ? "fail" : content.spam_word_count > 0 ? "warning" : "pass"} />
-            <span className="font-medium text-gray-900 text-sm">
-              Spam Trigger Words ({content.spam_word_count} found)
+    <div className="bg-white border border-border rounded-[14px] overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(12,26,46,0.04)" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-6 py-4 cursor-pointer border-none bg-transparent text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl">{icon}</span>
+          <span className="text-[15px] font-semibold text-navy">{title}</span>
+          {issueCount != null && issueCount > 0 && (
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+              issueType === "critical" ? "bg-danger-light text-danger" : "bg-warn-light text-warn"
+            }`}>
+              {issueCount} {issueCount === 1 ? "Issue" : "Issues"}
             </span>
-          </div>
-          {content.spam_trigger_words.length > 0 && (
-            <div className="flex flex-wrap gap-1 ml-7">
-              {content.spam_trigger_words.map((sw, i) => (
-                <Badge key={i} variant="outline" className="text-xs">
-                  {sw.word}
-                  <span className="text-gray-400 ml-1">({sw.category})</span>
-                </Badge>
-              ))}
-            </div>
           )}
         </div>
-
-        {/* Image Ratio */}
-        <div className="p-3 rounded-lg bg-gray-50">
-          <div className="flex items-center gap-2">
-            <StatusIcon status={content.image_ratio_status} />
-            <span className="font-medium text-gray-900 text-sm">Image-to-Text Ratio</span>
-            <span className="text-sm text-gray-500">
-              {Math.round(content.image_to_text_ratio * 100)}% images
-            </span>
-          </div>
-        </div>
-
-        {/* Links */}
-        {content.broken_links.length > 0 && (
-          <div className="p-3 rounded-lg bg-gray-50">
-            <div className="flex items-center gap-2 mb-2">
-              <StatusIcon status="fail" />
-              <span className="font-medium text-gray-900 text-sm">
-                Broken Links ({content.broken_links.length})
-              </span>
-            </div>
-            <div className="ml-7 space-y-1">
-              {content.broken_links.map((link, i) => (
-                <p key={i} className="text-xs text-red-600 font-mono truncate">
-                  {link}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* URL Shorteners */}
-        {content.has_url_shorteners && (
-          <div className="p-3 rounded-lg bg-gray-50">
-            <div className="flex items-center gap-2 mb-2">
-              <StatusIcon status="warning" />
-              <span className="font-medium text-gray-900 text-sm">
-                URL Shorteners Found
-              </span>
-            </div>
-            <div className="ml-7 space-y-1">
-              {content.url_shorteners_found.map((url, i) => (
-                <p key={i} className="text-xs text-orange-600 font-mono">
-                  {url}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* SpamAssassin */}
-        <div className="p-3 rounded-lg bg-gray-50">
-          <div className="flex items-center gap-2">
-            <StatusIcon status={content.spamassassin_status} />
-            <span className="font-medium text-gray-900 text-sm">SpamAssassin Score</span>
-            <span className="text-sm text-gray-500">
-              {content.spamassassin_score.toFixed(1)} / 5.0 threshold
-            </span>
-          </div>
-        </div>
-      </div>
-    </Collapsible>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className={`text-muted-light transition-transform ${open ? "rotate-180" : ""}`}>
+          <path d="M5 7.5l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && <div className="px-6 pb-5 flex flex-col gap-2">{children}</div>}
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// SpamAssassin Detail Section
-// ---------------------------------------------------------------------------
-function SpamAssassinSection({ report }: { report: EmailReport }) {
-  const { spamassassin } = report;
+/* ─── Check Row ─── */
+function CheckRow({
+  icon,
+  label,
+  status,
+  statusLabel,
+  detail,
+  fix,
+}: {
+  icon: string;
+  label: string;
+  status: CheckStatus;
+  statusLabel?: string;
+  detail?: string;
+  fix?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasFix = (status === "fail" || status === "warning") && (detail || fix);
 
   return (
-    <Collapsible
-      title="SpamAssassin Details"
-      defaultOpen={spamassassin.is_spam}
-      icon={<Bug className="h-5 w-5 text-blue-600" />}
-      badge={
-        <Badge variant={spamassassin.is_spam ? "destructive" : "success"}>
-          {spamassassin.is_spam ? "SPAM" : "NOT SPAM"}
-        </Badge>
-      }
-      className="mb-4"
+    <div
+      className={`rounded-[10px] border transition-all ${
+        status === "fail" ? "border-danger/20 bg-danger-light/50" :
+        status === "warning" ? "border-warn/20 bg-warn-light/50" :
+        "border-border bg-bg"
+      }`}
     >
-      <div className="space-y-3">
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-500">Score:</span>
-          <span className={`font-bold ${spamassassin.is_spam ? "text-red-600" : "text-green-600"}`}>
-            {spamassassin.score.toFixed(1)}
-          </span>
-          <span className="text-gray-500">Threshold:</span>
-          <span className="font-medium text-gray-700">{spamassassin.threshold.toFixed(1)}</span>
-        </div>
-
-        {spamassassin.rules_hit.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">
-              Rules Triggered ({spamassassin.rules_hit.length})
-            </h4>
-            <div className="flex flex-wrap gap-1">
-              {spamassassin.rules_hit.map((rule) => (
-                <Badge key={rule} variant="outline" className="text-xs font-mono">
-                  {rule}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </Collapsible>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Action Plan — THE MOST IMPORTANT SECTION
-// ---------------------------------------------------------------------------
-function ActionPlanSection({ actions }: { actions: ActionItem[] }) {
-  if (actions.length === 0) {
-    return (
-      <Alert variant="success" title="All Clear!">
-        No issues found. Your email is well-configured for deliverability.
-      </Alert>
-    );
-  }
-
-  return (
-    <Card className="mb-8">
-      <CardHeader>
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="flex items-center gap-2.5 text-[13px] font-medium text-navy">
+          <span className="text-base shrink-0">{icon}</span>
+          {label}
+        </span>
         <div className="flex items-center gap-2">
-          <Wrench className="h-5 w-5 text-blue-600" />
-          <CardTitle>What to Fix — Action Plan</CardTitle>
-        </div>
-        <p className="text-sm text-gray-500">
-          Ordered by impact. Fix these issues to improve your deliverability.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {actions.map((action, i) => (
-            <div
-              key={i}
-              className={`p-4 rounded-xl border ${
-                action.status === "fail"
-                  ? "border-red-200 bg-red-50/50"
-                  : "border-orange-200 bg-orange-50/50"
-              }`}
+          {statusBadge(status, statusLabel)}
+          {hasFix && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-transparent border border-border text-muted hover:text-navy hover:border-navy/30 cursor-pointer transition-colors"
             >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold text-white shrink-0 ${
-                    action.status === "fail" ? "bg-red-600" : "bg-orange-500"
-                  }`}
-                >
-                  {action.priority}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">
-                      {action.title}
-                    </h3>
-                    <Badge
-                      variant={
-                        action.status === "fail" ? "destructive" : "warning"
-                      }
-                      className="text-xs"
-                    >
-                      {action.status === "fail" ? "Must Fix" : "Should Fix"}
-                    </Badge>
-                  </div>
-
-                  {/* WHY */}
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      Why it matters:
-                    </p>
-                    <p className="text-sm text-gray-600">{action.why}</p>
-                  </div>
-
-                  {/* HOW */}
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      How to fix it:
-                    </p>
-                    <div className="text-sm text-gray-600 whitespace-pre-line bg-white rounded-lg p-3 border border-gray-100">
-                      {action.how}
-                    </div>
-                  </div>
-
-                  {/* IMPACT */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-green-600 font-medium">
-                      📈 {action.impact}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+              {expanded ? "Hide" : "Fix ↓"}
+            </button>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      {expanded && hasFix && (
+        <div className="px-4 pb-3 border-t border-border/50 pt-3 animate-fadeUp" style={{ animationDuration: "0.2s" }}>
+          {detail && <p className="text-[12.5px] text-muted mb-2" style={{ lineHeight: 1.6 }}>{detail}</p>}
+          {fix && (
+            <div className="font-mono text-[11px] text-brand bg-navy rounded-lg px-3.5 py-2.5 overflow-x-auto" style={{ lineHeight: 1.6 }}>
+              {fix}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main Report Page
-// ---------------------------------------------------------------------------
+
+/* ─── MAIN PAGE ─── */
 export default function ReportPage() {
   const params = useParams();
+  const router = useRouter();
   const testId = params.id as string;
+  const { copied, copy } = useCopyToClipboard();
 
-  const { data: report, isLoading, isError } = useQuery<EmailReport>({
+  const { data: report, isLoading, error } = useQuery<EmailReport>({
     queryKey: ["report", testId],
     queryFn: () => getReport(testId),
-    enabled: !!testId,
-    staleTime: Infinity, // Report doesn't change
+    staleTime: Infinity,
   });
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-500">Loading your report...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-brand border-t-transparent animate-spin" />
+          <span className="text-sm text-muted">Loading your report...</span>
         </div>
       </div>
     );
   }
 
-  if (isError || !report) {
+  if (error || !report) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
         <div className="text-center">
-          <XCircle className="h-8 w-8 text-red-600 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
-            Report Not Found
-          </h1>
-          <p className="text-gray-500 mb-4">
-            This report may have expired or doesn&apos;t exist.
-          </p>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center h-10 px-6 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-          >
-            Start New Test
-          </a>
+          <p className="text-xl mb-2">😕</p>
+          <p className="text-navy font-semibold">Report not found</p>
+          <p className="text-sm text-muted mb-4">This test may have expired or does not exist.</p>
+          <button onClick={() => router.push("/")} className="bg-navy text-white text-sm font-semibold px-5 py-2 rounded-lg border-none cursor-pointer hover:bg-navy-soft transition-colors">
+            Run New Test →
+          </button>
         </div>
       </div>
     );
   }
+
+  const stats = countStats(report);
+  const reportUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  // Auth issues
+  const authIssues = report.authentication.checks.filter((c) => c.status !== "pass").length;
+  // Reputation issues
+  let repIssues = 0;
+  if (report.reputation.ip_blacklist_count > 0) repIssues++;
+  if (report.reputation.domain_blacklist_count > 0) repIssues++;
+  if (report.reputation.domain_age_status !== "pass") repIssues++;
+  // Content issues
+  let contentIssues = 0;
+  if (report.content.subject_has_caps) contentIssues++;
+  if (report.content.spam_word_count > 0) contentIssues++;
+  if (report.content.image_ratio_status !== "pass") contentIssues++;
+  if (!report.content.links_valid) contentIssues++;
+  if (report.content.has_url_shorteners) contentIssues++;
+  if (report.content.spamassassin_status !== "pass") contentIssues++;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <Mail className="h-6 w-6 text-blue-600" />
-            <span className="font-bold text-lg text-gray-900">
-              IsMyEmailSpam
-            </span>
-          </a>
-          <a
-            href="/"
-            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-          >
-            New Test
-            <ExternalLink className="h-3 w-3" />
-          </a>
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+      {/* Thin progress bar at top */}
+      <div className="fixed top-0 left-0 right-0 h-[3px] z-50" style={{ background: "var(--color-border)" }}>
+        <div className={`h-full ${scoreBarColor(report.final_score)} animate-fillBar`} style={{ width: `${report.final_score}%` }} />
+      </div>
+
+      <div className="max-w-[1200px] mx-auto py-8 px-5 grid gap-6" style={{ gridTemplateColumns: "340px 1fr" }}>
+
+        {/* ═════════ SIDEBAR ═════════ */}
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-5 self-start max-lg:order-first">
+
+          {/* ── Score Card ── */}
+          <div className="rp-score-block rounded-[16px] p-6 text-center">
+            <div className="font-mono text-[10px] uppercase mb-3" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "2px" }}>
+              Delivery Health Score
+            </div>
+            <div className="font-display mb-1" style={{ fontSize: 72, fontWeight: 400, lineHeight: 1, letterSpacing: "-3px", color: "white" }}>
+              {report.final_score}
+              <span className="text-3xl" style={{
+                color:
+                  report.final_score >= 80 ? "var(--color-brand)" :
+                  report.final_score >= 50 ? "var(--color-warn)" :
+                  "var(--color-danger)"
+              }}>/100</span>
+            </div>
+            {riskBadge(report.risk_level)}
+
+            {/* Score bar */}
+            <div className="mt-5 h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <div className={`h-full rounded-full ${scoreBarColor(report.final_score)} animate-fillBar`} style={{ width: `${report.final_score}%` }} />
+            </div>
+            <div className="flex justify-between font-mono text-[10px] mt-1.5" style={{ color: "rgba(255,255,255,0.3)" }}>
+              <span>0</span><span>50</span><span>100</span>
+            </div>
+
+            <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
+              {report.risk_summary}
+            </p>
+          </div>
+
+          {/* ── Quick Stats ── */}
+          <div className="bg-white border border-border rounded-[14px] p-4 grid grid-cols-2 gap-3" style={{ boxShadow: "0 2px 12px rgba(12,26,46,0.04)" }}>
+            {[
+              { label: "Critical Issues", value: stats.critical, color: "text-danger", bg: "bg-danger-light" },
+              { label: "Warnings", value: stats.warnings, color: "text-warn", bg: "bg-warn-light" },
+              { label: "Checks Passed", value: stats.passed, color: "text-brand", bg: "bg-brand-light" },
+              { label: "SpamAssassin", value: report.spamassassin.score.toFixed(1), color: report.spamassassin.is_spam ? "text-danger" : "text-warn", bg: report.spamassassin.is_spam ? "bg-danger-light" : "bg-warn-light" },
+            ].map((s) => (
+              <div key={s.label} className={`rounded-[10px] p-3 text-center ${s.bg}`}>
+                <div className={`font-display text-2xl ${s.color}`} style={{ fontWeight: 400, lineHeight: 1, letterSpacing: "-1px" }}>
+                  {s.value}
+                </div>
+                <div className="text-[11px] text-muted font-medium mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Share Card ── */}
+          <div className="bg-white border border-border rounded-[14px] p-5" style={{ boxShadow: "0 2px 12px rgba(12,26,46,0.04)" }}>
+            <h3 className="text-sm font-semibold text-navy mb-3">📤 Share Report</h3>
+            <div className="flex items-center border border-border rounded-lg px-3 py-2 mb-3" style={{ background: "var(--color-bg)" }}>
+              <span className="font-mono text-[11px] text-muted flex-1 truncate">{reportUrl}</span>
+              <button onClick={() => copy(reportUrl)} className="text-brand text-[11px] font-semibold bg-transparent border-none cursor-pointer hover:underline flex items-center gap-1">
+                <CopyIcon />
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <a href={`https://twitter.com/intent/tweet?text=My%20email%20delivery%20score:%20${report.final_score}/100&url=${encodeURIComponent(reportUrl)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[12px] font-semibold no-underline px-3 py-2 rounded-lg transition-colors" style={{ background: "#1da1f2", color: "white" }}>
+                Tweet
+              </a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(reportUrl)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[12px] font-semibold no-underline px-3 py-2 rounded-lg transition-colors" style={{ background: "#0077b5", color: "white" }}>
+                LinkedIn
+              </a>
+            </div>
+          </div>
+
+          {/* ── Tested Info ── */}
+          <div className="bg-white border border-border rounded-[14px] p-4" style={{ boxShadow: "0 2px 12px rgba(12,26,46,0.04)" }}>
+            <div className="text-[12px] text-muted space-y-1.5">
+              <div className="flex justify-between"><span>From:</span><span className="font-mono text-navy">{report.from_address}</span></div>
+              <div className="flex justify-between"><span>Domain:</span><span className="font-mono text-navy">{report.from_domain}</span></div>
+              <div className="flex justify-between"><span>Subject:</span><span className="font-mono text-navy truncate max-w-[180px]">{report.subject}</span></div>
+              <div className="flex justify-between"><span>Tested:</span><span className="font-mono text-navy">{new Date(report.tested_at).toLocaleString()}</span></div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ═════════ MAIN CONTENT ═════════ */}
+        <main className="flex flex-col gap-4 min-w-0">
+
+          {/* ── Authentication ── */}
+          <Section icon="🔐" title="Email Authentication" issueCount={authIssues} issueType="critical" defaultOpen={true}>
+            {report.authentication.checks.map((check: AuthCheck) => (
+              <CheckRow
+                key={check.name}
+                icon={check.name === "SPF" ? "🔐" : check.name === "DKIM" ? "✍️" : "🛡️"}
+                label={`${check.name} ${check.name === "SPF" ? "Authentication" : check.name === "DKIM" ? "Signature" : "Policy"}`}
+                status={check.status}
+                statusLabel={
+                  check.status === "pass" ? `✓ PASS` :
+                  check.status === "fail" ? `✕ FAIL` :
+                  `⚠ ${check.name === "DMARC" ? "MISSING" : "WARNING"}`
+                }
+                detail={check.description}
+                fix={check.details ?? undefined}
+              />
+            ))}
+          </Section>
+
+          {/* ── Reputation ── */}
+          <Section icon="🌍" title="Sender Reputation" issueCount={repIssues} issueType={repIssues > 0 ? "warn" : undefined}>
+            <CheckRow
+              icon="🌐"
+              label="IP Blacklists"
+              status={report.reputation.ip_blacklist_count > 0 ? "fail" : "pass"}
+              statusLabel={report.reputation.ip_blacklist_count > 0 ? `✕ LISTED (${report.reputation.ip_blacklist_count})` : "✓ CLEAN"}
+              detail={report.reputation.ip_blacklist_count > 0 ? `Your sending IP ${report.reputation.sending_ip || ""} was found on ${report.reputation.ip_blacklist_count} blacklist(s): ${report.reputation.ip_blacklists.filter((b) => b.listed).map((b) => b.list_name).join(", ")}` : undefined}
+            />
+            <CheckRow
+              icon="🏢"
+              label="Domain Blacklists"
+              status={report.reputation.domain_blacklist_count > 0 ? "fail" : "pass"}
+              statusLabel={report.reputation.domain_blacklist_count > 0 ? `✕ LISTED (${report.reputation.domain_blacklist_count})` : "✓ CLEAN"}
+              detail={report.reputation.domain_blacklist_count > 0 ? `Domain found on: ${report.reputation.domain_blacklists.filter((b) => b.listed).map((b) => b.list_name).join(", ")}` : undefined}
+            />
+            <CheckRow
+              icon="📅"
+              label="Domain Age"
+              status={report.reputation.domain_age_status}
+              statusLabel={
+                report.reputation.domain_age_status === "pass" ? "✓ ESTABLISHED" :
+                report.reputation.domain_age_status === "warning" ? `⚠ ${report.reputation.domain_age_days ?? "?"} days` :
+                "✕ NEW"
+              }
+              detail={report.reputation.domain_age_description}
+            />
+          </Section>
+
+          {/* ── Content Analysis ── */}
+          <Section icon="✍️" title="Content Analysis" issueCount={contentIssues} issueType={contentIssues > 2 ? "critical" : "warn"}>
+            {/* Subject Line */}
+            <CheckRow
+              icon="📝"
+              label={`Subject Line: "${report.content.subject_line}"`}
+              status={report.content.subject_has_caps ? "fail" : "pass"}
+              statusLabel={report.content.subject_has_caps ? "✕ ALL CAPS" : "✓ GOOD"}
+              detail={report.content.subject_has_caps ? "Subject lines with excessive capitalization trigger spam filters in Gmail and Outlook. Use sentence case instead." : undefined}
+            />
+
+            {/* Spam Words */}
+            <CheckRow
+              icon="🚫"
+              label="Spam Trigger Words"
+              status={report.content.spam_word_count > 0 ? "fail" : "pass"}
+              statusLabel={report.content.spam_word_count > 0 ? `✕ ${report.content.spam_word_count} FOUND` : "✓ CLEAN"}
+              detail={report.content.spam_word_count > 0 ? `Found: ${report.content.spam_trigger_words.map((w) => `"${w.word}" (${w.category})`).join(", ")}` : undefined}
+            />
+
+            {/* Image Ratio */}
+            <CheckRow
+              icon="🖼️"
+              label="Image-to-Text Ratio"
+              status={report.content.image_ratio_status}
+              statusLabel={
+                report.content.image_ratio_status === "pass" ? "✓ GOOD" :
+                report.content.image_ratio_status === "warning" ? `⚠ ${(report.content.image_to_text_ratio * 100).toFixed(0)}%` :
+                `✕ ${(report.content.image_to_text_ratio * 100).toFixed(0)}%`
+              }
+              detail={report.content.image_ratio_status !== "pass" ? "Emails with too many images and not enough text often get flagged. Aim for at least 60% text content." : undefined}
+            />
+
+            {/* Links */}
+            <CheckRow
+              icon="🔗"
+              label="Link Validation"
+              status={report.content.links_valid ? "pass" : "fail"}
+              statusLabel={report.content.links_valid ? "✓ ALL VALID" : `✕ ${report.content.broken_links.length} BROKEN`}
+              detail={!report.content.links_valid ? `Broken links found: ${report.content.broken_links.join(", ")}` : undefined}
+            />
+
+            {/* URL Shorteners */}
+            <CheckRow
+              icon="🔗"
+              label="URL Shorteners"
+              status={report.content.has_url_shorteners ? "warning" : "pass"}
+              statusLabel={report.content.has_url_shorteners ? `⚠ ${report.content.url_shorteners_found.length} FOUND` : "✓ NONE"}
+              detail={report.content.has_url_shorteners ? `URL shorteners like ${report.content.url_shorteners_found.join(", ")} are often used in phishing. Use full URLs instead.` : undefined}
+            />
+
+            {/* SpamAssassin */}
+            <div className="rounded-[10px] border border-border bg-bg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="flex items-center gap-2.5 text-[13px] font-medium text-navy">
+                  📊 SpamAssassin Score
+                </span>
+                {statusBadge(
+                  report.spamassassin.is_spam ? "fail" : report.content.spamassassin_status,
+                  report.spamassassin.is_spam ? `✕ ${report.spamassassin.score} / ${report.spamassassin.threshold}` : `${report.spamassassin.score} / ${report.spamassassin.threshold}`
+                )}
+              </div>
+              {/* Score bar */}
+              <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ background: "var(--color-border)" }}>
+                <div
+                  className={`h-full rounded-full ${scoreBarColor(Math.max(0, 100 - report.spamassassin.score * 10))}`}
+                  style={{ width: `${Math.min(100, (report.spamassassin.score / report.spamassassin.threshold) * 100)}%`, transition: "width 1s ease" }}
+                />
+              </div>
+              {/* Rules */}
+              {report.spamassassin.rules_hit.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-[11px] font-semibold text-muted uppercase mb-1.5" style={{ letterSpacing: "1px" }}>Rules triggered:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.spamassassin.rules_hit.map((rule) => (
+                      <span key={rule} className="font-mono text-[10px] text-muted bg-white border border-border rounded px-2 py-0.5">
+                        {rule}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
+
+          {/* ── Action Plan ── */}
+          {report.action_plan.length > 0 && (
+            <div className="action-section-bg rounded-[14px] p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-xl">🔧</span>
+                <h2 className="font-display text-xl text-navy" style={{ fontWeight: 400, letterSpacing: "-0.3px" }}>Your Action Plan</h2>
+              </div>
+              <div className="flex flex-col gap-3">
+                {report.action_plan.map((item: ActionItem, i: number) => (
+                  <ActionCard key={i} item={item} index={i + 1} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Disclaimer ── */}
+          <div className="bg-white border border-border rounded-xl px-5 py-4 text-center" style={{ boxShadow: "0 2px 12px rgba(12,26,46,0.04)" }}>
+            <p className="text-xs text-muted-light" style={{ lineHeight: 1.6 }}>
+              This report was generated automatically. Results are based on publicly available DNS records, blacklist databases, and content analysis.
+              Your test email has been securely deleted. We do not store, read, or share email content.
+            </p>
+          </div>
+
+          {/* ── Retest Banner ── */}
+          <div className="bg-navy rounded-[14px] p-6 flex items-center justify-between gap-4 flex-wrap" style={{ boxShadow: "0 4px 24px rgba(12,26,46,0.15)" }}>
+            <div>
+              <h3 className="font-display text-xl text-white mb-1" style={{ fontWeight: 400 }}>
+                Made changes? <em className="italic text-brand">Test again.</em>
+              </h3>
+              <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Run another free test to verify your fixes are working.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-brand text-white border-none cursor-pointer font-body text-sm font-semibold px-6 py-3 rounded-xl whitespace-nowrap transition-all hover:opacity-90"
+              style={{ boxShadow: "0 4px 16px rgba(14,166,110,0.3)" }}
+            >
+              Run New Test →
+            </button>
+          </div>
+        </main>
+      </div>
+
+      {/* ───── Responsive overrides ───── */}
+      <style>{`
+        @media (max-width: 900px) {
+          .max-w-\\[1200px\\] { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+
+/* ─── Action Card sub-component ─── */
+function ActionCard({ item, index }: { item: ActionItem; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="bg-white border border-brand/15 rounded-xl overflow-hidden" style={{ boxShadow: "0 2px 8px rgba(14,166,110,0.06)" }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 px-5 py-4 border-none bg-transparent cursor-pointer text-left"
+      >
+        <span className="w-7 h-7 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center shrink-0 font-mono">
+          {index}
+        </span>
+        <span className="text-[14px] font-semibold text-navy flex-1">{item.title}</span>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+          item.status === "fail" ? "bg-danger-light text-danger" : "bg-warn-light text-warn"
+        }`}>
+          {item.status === "fail" ? "Critical" : "Recommended"}
+        </span>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className={`text-muted-light transition-transform ${expanded ? "rotate-180" : ""}`}>
+          <path d="M5 7.5l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-brand/10 pt-4 animate-fadeUp" style={{ animationDuration: "0.2s" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-danger-light/50 rounded-lg p-3">
+              <div className="text-[10px] font-bold text-danger uppercase mb-1" style={{ letterSpacing: "1px" }}>WHY</div>
+              <p className="text-[12.5px] text-navy" style={{ lineHeight: 1.5 }}>{item.why}</p>
+            </div>
+            <div className="bg-brand-light/50 rounded-lg p-3">
+              <div className="text-[10px] font-bold text-brand uppercase mb-1" style={{ letterSpacing: "1px" }}>HOW</div>
+              <p className="text-[12.5px] text-navy" style={{ lineHeight: 1.5 }}>{item.how}</p>
+            </div>
+            <div className="rounded-lg p-3" style={{ background: "rgba(14,166,110,0.04)", border: "1px solid rgba(14,166,110,0.1)" }}>
+              <div className="text-[10px] font-bold text-navy uppercase mb-1" style={{ letterSpacing: "1px" }}>IMPACT</div>
+              <p className="text-[12.5px] text-navy" style={{ lineHeight: 1.5 }}>{item.impact}</p>
+            </div>
+          </div>
         </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Score Hero */}
-        <ScoreHero report={report} />
-
-        {/* Action Plan — FIRST because it's the most important */}
-        <ActionPlanSection actions={report.action_plan} />
-
-        {/* Detail Sections */}
-        <div className="space-y-0">
-          <AuthSection report={report} />
-          <ReputationSection report={report} />
-          <ContentSection report={report} />
-          <SpamAssassinSection report={report} />
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white py-8 mt-8">
-        <div className="max-w-4xl mx-auto px-4 text-center text-sm text-gray-400">
-          <p>
-            This report will be automatically deleted within 1 hour. We don&apos;t
-            store your email content.
-          </p>
-          <p className="mt-2">
-            &copy; {new Date().getFullYear()} IsMyEmailSpam.com — Free email
-            deliverability testing.
-          </p>
-        </div>
-      </footer>
+      )}
     </div>
   );
 }

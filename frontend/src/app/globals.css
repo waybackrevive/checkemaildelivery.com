@@ -1,36 +1,306 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #ffffff;
-  --color-foreground: #171717;
-  --font-sans: var(--font-geist-sans);
+  --color-bg: #f8f9fb;
+  --color-navy: #0c1a2e;
+  --color-navy-soft: #1e3a5f;
+  --color-brand: #0ea66e;
+  --color-brand-light: #e8f9f2;
+  --color-brand-mid: #d0f5e8;
+  --color-danger: #e5373a;
+  --color-danger-light: #fff0f0;
+  --color-warn: #f59e0b;
+  --color-warn-light: #fffbeb;
+  --color-border: #e2e8f0;
+  --color-border-soft: #f1f5f9;
+  --color-muted: #64748b;
+  --color-muted-light: #94a3b8;
+
+  --font-display: var(--font-instrument-serif);
   --font-mono: var(--font-geist-mono);
+  --font-body: var(--font-plus-jakarta-sans);
 }
 
+/* ─── BASE ─── */
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-navy);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Pulse animation for the waiting screen */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.7;
+/* ─── NOISE TEXTURE ─── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 
   50% {
-    transform: scale(1.05);
-    opacity: 0.4;
-  }
-
-  100% {
-    transform: scale(0.95);
-    opacity: 0.7;
+    opacity: 0.5;
+    transform: scale(0.7);
   }
 }
 
-.animate-pulse-ring {
-  animation: pulse-ring 2s ease-in-out infinite;
+@keyframes ring-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fillBar {
+  from {
+    width: 0% !important;
+  }
+}
+
+@keyframes fillLine {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.5s ease both;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.4s ease;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s infinite;
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 2.5s ease-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-fillBar {
+  animation: fillBar 1.5s ease 0.5s both;
+}
+
+.animate-fillLine {
+  animation: fillLine 0.5s ease both;
+}
+
+.animate-blink {
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+/* Stagger delays */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-150 {
+  animation-delay: 0.15s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-250 {
+  animation-delay: 0.25s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-350 {
+  animation-delay: 0.35s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+/* Ring pulse children */
+.ring-delay-0 {
+  animation-delay: 0s;
+}
+
+.ring-delay-1 {
+  animation-delay: 0.6s;
+}
+
+.ring-delay-2 {
+  animation-delay: 1.2s;
+}
+
+/* ─── REVEAL ON SCROLL ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── HERO GRID BG ─── */
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(14, 166, 110, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 166, 110, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 100%);
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse 70% 60% at 50% -10%, rgba(14, 166, 110, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 20% 100%, rgba(12, 26, 46, 0.04) 0%, transparent 60%);
+}
+
+/* ─── SCORE BAR GRADIENT ─── */
+.score-bar-green {
+  background: linear-gradient(90deg, var(--color-brand), #34d399);
+}
+
+.score-bar-amber {
+  background: linear-gradient(90deg, var(--color-warn), #fcd34d);
+}
+
+.score-bar-red {
+  background: linear-gradient(90deg, var(--color-danger), #fca5a5);
+}
+
+/* ─── SCORE CARD BG ─── */
+.score-card-bg {
+  background: linear-gradient(145deg, var(--color-navy) 0%, #1a2f4a 100%);
+}
+
+/* ─── REPORT PREVIEW SCORE BLOCK ─── */
+.rp-score-block {
+  background: linear-gradient(135deg, #0c1a2e 0%, #1e3a5f 100%);
+}
+
+/* ─── ACTION SECTION BG ─── */
+.action-section-bg {
+  background: linear-gradient(135deg, #f0fdf9, #fafffe);
+}
+
+/* ─── CODE BLOCK ─── */
+.code-block {
+  background: var(--color-navy);
+  color: #7dd3fc;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+/* ─── BG GLOW (waiting page) ─── */
+.bg-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(14, 166, 110, 0.06) 0%, transparent 70%);
+}
+
+/* ─── PROGRESS STEP LINE FILL ─── */
+.ps-line-done::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-brand);
+  animation: fillLine 0.5s ease both;
 }

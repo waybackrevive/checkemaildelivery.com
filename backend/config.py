@@ -16,7 +16,7 @@ load_dotenv(_env_path)
 class Settings:
     # Domain for generating test email addresses
     MAIL_DOMAIN: str = field(
-        default_factory=lambda: os.getenv("MAIL_DOMAIN", "ismyemailspam.com")
+        default_factory=lambda: os.getenv("MAIL_DOMAIN", "checkemaildelivery.com")
     )
 
     # Upstash Redis
@@ -42,7 +42,7 @@ class Settings:
 
     # Test session settings
     TEST_TTL_SECONDS: int = 3600  # 1 hour
-    MAX_TESTS_PER_DAY: int = 3
+    MAX_TESTS_PER_DAY: int = 5
 
     # CORS — frontend origin
     FRONTEND_URL: str = field(

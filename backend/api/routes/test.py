@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/test", tags=["test"])
 async def create_test(request: Request):
     """
     Generate a unique test email address for the visitor.
-    Rate limited to 3 tests per day per IP.
+    Rate limited to 5 tests per day per IP.
     """
     # Get client IP
     client_ip = request.client.host if request.client else "unknown"
@@ -37,7 +37,7 @@ async def create_test(request: Request):
     if not check_rate_limit(client_ip):
         raise HTTPException(
             status_code=429,
-            detail="You've reached the limit of 3 tests per day. Come back tomorrow!",
+            detail="You've reached the limit of 5 tests per day. Come back tomorrow!",
         )
 
     # Generate test session

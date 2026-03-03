@@ -21,7 +21,7 @@ logging.basicConfig(
 
 # Create FastAPI app
 app = FastAPI(
-    title="IsMyEmailSpam API",
+    title="CheckEmailDelivery API",
     description="Email deliverability diagnostic tool API",
     version="1.0.0",
     docs_url="/docs",       # Auto-generated API docs at /docs
@@ -50,7 +50,7 @@ app.include_router(report.router)
 async def root():
     """Health check endpoint."""
     return {
-        "service": "IsMyEmailSpam API",
+        "service": "CheckEmailDelivery API",
         "status": "healthy",
         "version": "1.0.0",
     }

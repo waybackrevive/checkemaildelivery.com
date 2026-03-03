@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -15,29 +24,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IsMyEmailSpam.com — Free Email Deliverability Test",
+  title: "CheckEmailDelivery.com — Will Your Email Actually Reach the Inbox?",
   description:
-    "Send a test email and get a plain-English report on what's wrong and how to fix it. Check SPF, DKIM, DMARC, blacklists, spam words, and more.",
+    "Send a test email and get a full delivery audit — authentication, reputation, content, blacklists — with exact steps to fix every issue. Free, no signup.",
   keywords: [
     "email deliverability",
-    "spam test",
+    "email spam test",
     "SPF check",
     "DKIM check",
     "DMARC check",
-    "email spam checker",
-    "blacklist check",
+    "email blacklist check",
+    "spam score",
+    "email delivery test",
   ],
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${instrumentSerif.variable} ${plusJakarta.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
           {children}
