@@ -35,15 +35,15 @@ Do these **before** touching any code:
 | # | Service | What to do | You'll get |
 |---|---------|-----------|------------|
 | 1 | **Upstash Redis** | Create a free DB at [upstash.com](https://upstash.com) | REST URL + Token |
-| 2 | **Resend** | Sign up at [resend.com](https://resend.com) → add your domain → verify DNS | Webhook signing secret |
-| 3 | **Domain DNS** | Add MX record: `MX @ inbound-smtp.resend.com 10` | Emails route to Resend |
+| 2 | **Mailgun** | Sign up at [mailgun.com](https://www.mailgun.com) → add your domain → verify DNS | Webhook signing key |
+| 3 | **Domain DNS** | Add MX records per Mailgun instructions (`mxa.mailgun.org`, `mxb.mailgun.org`) | Emails route to Mailgun |
 
 ### PHASE 2 — Backend (~5 min)
 
 ```bash
 cd backend
 cp ".env copy.example" .env      # Copy the template
-# Open .env → paste your Upstash URL/Token + Resend secret
+# Open .env → paste your Upstash URL/Token + Mailgun signing key
 ```
 
 **Option A — With Docker (includes SpamAssassin):**
@@ -71,7 +71,7 @@ Verify: open `http://localhost:3000` → homepage loads with a test email addres
 
 ### PHASE 4 — Connect Webhook (for receiving real emails)
 
-Resend needs a public URL to send webhooks to your backend.
+Mailgun needs a public URL to send webhooks to your backend.
 
 For **local dev**, use ngrok:
 ```bash
@@ -79,11 +79,10 @@ ngrok http 8000
 # Copy the https URL, e.g. https://abc123.ngrok.io
 ```
 
-Then in **Resend dashboard** → Webhooks → set endpoint to:
-```
-https://abc123.ngrok.io/api/webhook/resend
-```
-Events: select `email.received`
+Then in **Mailgun dashboard** → Receiving → Create Route:
+- Expression: `match_recipient(".*@checkemaildelivery.com")`
+- Action: `forward("https://abc123.ngrok.io/api/webhook/mailgun")`
+- Check: **Store and notify**
 
 ### PHASE 5 — Test the Full Flow
 
@@ -102,7 +101,7 @@ Events: select `email.received`
 | # | Component | Platform | Cost | Notes |
 |---|-----------|----------|------|-------|
 | 1 | Redis | Upstash | Free | Already done in Phase 1 |
-| 2 | Email | Resend | Free | Already done in Phase 1 |
+| 2 | Email | Mailgun | Free (5K/mo) | Already done in Phase 1 |
 | 3 | Backend | [Railway](https://railway.app) | ~$5/mo | Deploy first — frontend needs its URL |
 | 4 | Frontend | [Vercel](https://vercel.com) | Free | Set `NEXT_PUBLIC_API_URL` to Railway URL |
 | 5 | DNS | Cloudflare | Free | Point `checkemaildelivery.com` → Vercel |
@@ -113,7 +112,7 @@ Events: select `email.received`
 2. **Backend → Railway** — Import repo, set root to `backend`, add env vars (see backend README), add SpamAssassin Docker service
 3. **Frontend → Vercel** — Import repo, set root to `frontend`, add env var:
    - `NEXT_PUBLIC_API_URL` = `https://your-api.up.railway.app`
-4. **Resend** — Update webhook URL to your Railway backend URL
+4. **Mailgun** — Update inbound route to forward to your Railway backend URL
 5. **Backend CORS** — Set `FRONTEND_URL=https://checkemaildelivery.com` in Railway env vars
 6. **DNS** — In Cloudflare, add CNAME: `@ → cname.vercel-dns.com`
 
@@ -128,7 +127,7 @@ Events: select `email.received`
 | `MAIL_DOMAIN` | Yes | `checkemaildelivery.com` |
 | `UPSTASH_REDIS_URL` | **Yes** | `https://your-db.upstash.io` |
 | `UPSTASH_REDIS_TOKEN` | **Yes** | `your-token` |
-| `RESEND_WEBHOOK_SECRET` | No (skip in dev) | `whsec_xxx` |
+| `MAILGUN_SIGNING_KEY` | No (skip in dev) | `key-xxx` |
 | `SPAMASSASSIN_HOST` | No | `spamassassin` (Docker) / `localhost` (no Docker) |
 | `SPAMASSASSIN_PORT` | No | `783` |
 | `FRONTEND_URL` | No | `http://localhost:3000` (dev) / `https://checkemaildelivery.com` (prod) |
@@ -147,9 +146,9 @@ Events: select `email.received`
 |-------|-----------|
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v4, TanStack Query |
 | Backend | Python 3.11+, FastAPI, Pydantic |
-| Analysis | dkimpy, pyspf, checkdmarc, SpamAssassin, BeautifulSoup |
+| Analysis | Authentication-Results parsing, checkdmarc, SpamAssassin, BeautifulSoup |
 | Storage | Upstash Redis (auto-expires in 1 hour) |
-| Email | Resend Inbound Webhooks |
+| Email | Mailgun Inbound Webhooks |
 
 ---
 

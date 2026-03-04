@@ -27,9 +27,9 @@ class Settings:
         default_factory=lambda: os.getenv("UPSTASH_REDIS_TOKEN", "")
     )
 
-    # Resend — inbound email webhook signing secret
-    RESEND_WEBHOOK_SECRET: str = field(
-        default_factory=lambda: os.getenv("RESEND_WEBHOOK_SECRET", "")
+    # Mailgun — inbound email webhook signing key
+    MAILGUN_SIGNING_KEY: str = field(
+        default_factory=lambda: os.getenv("MAILGUN_SIGNING_KEY", "")
     )
 
     # SpamAssassin — runs as Docker sidecar in production, localhost for local dev

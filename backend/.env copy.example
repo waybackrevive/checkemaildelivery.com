@@ -8,8 +8,8 @@ MAIL_DOMAIN=ismyemailspam.com
 UPSTASH_REDIS_URL=https://your-db.upstash.io
 UPSTASH_REDIS_TOKEN=your-token-here
 
-# Resend (get from https://resend.com/settings/webhooks → signing secret)
-RESEND_WEBHOOK_SECRET=whsec_your-secret-here
+# Mailgun (get from Mailgun Dashboard → Sending → Webhooks → Signing Key)
+MAILGUN_SIGNING_KEY=your-signing-key-here
 
 # SpamAssassin (Docker sidecar)
 # Use "spamassassin" when running with docker-compose (default)

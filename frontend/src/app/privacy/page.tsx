@@ -112,15 +112,15 @@ export default function PrivacyPage() {
               <p>We use the following third-party services to operate:</p>
               <ul className="list-disc pl-6 mt-3 space-y-1.5">
                 <li>
-                  <strong className="text-navy">Resend</strong> — receives
+                  <strong className="text-navy">Mailgun</strong> — receives
                   inbound test emails via webhook. Subject to{" "}
                   <a
-                    href="https://resend.com/legal/privacy-policy"
+                    href="https://www.mailgun.com/legal/privacy-policy/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-brand underline"
                   >
-                    Resend&apos;s Privacy Policy
+                    Mailgun&apos;s Privacy Policy
                   </a>
                   .
                 </li>
