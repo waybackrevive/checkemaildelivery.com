@@ -2,29 +2,19 @@
 Header Parser — FIXED v3
 ========================
 
-ROOT CAUSE OF ALL 3 FALSE POSITIVES:
+ROOT CAUSE OF ALL 3 FALSE POSITIVES (historical):
 ──────────────────────────────────────────────────────────────────────────────
-Your tool uses Resend for inbound email. Resend sends a JSON webhook, and
-_build_raw_email_from_resend() reconstructs a fake MIME email from that JSON.
-
-Problem 1 — DKIM always FAILS:
-  dkimpy verifies the DKIM signature CRYPTOGRAPHICALLY on the raw bytes.
-  The reconstructed email body is different from the original — so the
-  RSA signature will never match. dkimpy fails even on perfectly signed email.
-
-Problem 2 — SPF always WARNS:
-  pyspf needs the real originating IP. Your reconstructed email has no
-  Received headers with real IPs, so pyspf gets "127.0.0.1" or empty string.
-  This makes SPF fail even for domains with perfect SPF records.
+The original tool reconstructed emails from webhook JSON, breaking DKIM
+signatures and losing real IPs for SPF. Live crypto re-verification always
+false-failed.
 
 THE FIX:
 ──────────────────────────────────────────────────────────────────────────────
 Read the "Authentication-Results" header as the PRIMARY source of truth.
 
-When Resend receives your email, its own MX server runs SPF/DKIM/DMARC
-verification and writes the result into the Authentication-Results header.
-This header is passed through in Resend's webhook payload → headers array
-→ included in the reconstructed email by _build_raw_email_from_resend().
+Cloudflare Email Routing forwards the raw RFC-2822 email via an Email Worker.
+The receiving MX server's Authentication-Results header is preserved intact
+in the raw email stream — no reconstruction needed.
 
 This IS the real result. It's what Gmail, Outlook, etc. would have seen.
 """
@@ -49,11 +39,11 @@ def _parse_auth_results_header(raw_email: str) -> dict:
     """
     Parse Authentication-Results + ARC-Authentication-Results headers.
 
-    Real example written by Resend's MX server:
-      Authentication-Results: mx.resend.com;
-         spf=pass smtp.mailfrom=support@waybackrevive.com;
-         dkim=pass header.i=@waybackrevive.com header.s=resend;
-         dmarc=pass header.from=waybackrevive.com
+    Real example from an MX server's Authentication-Results header:
+      Authentication-Results: mx.example.com;
+         spf=pass smtp.mailfrom=support@example.com;
+         dkim=pass header.i=@example.com header.s=selector1;
+         dmarc=pass header.from=example.com
 
     We read this — not try to re-verify the crypto ourselves.
     """
@@ -71,7 +61,7 @@ def _parse_auth_results_header(raw_email: str) -> dict:
     )
 
     if not header_values:
-        logger.warning("No Authentication-Results header in email — Resend may not be passing headers")
+        logger.warning("No Authentication-Results header found in email")
         return out
 
     full_text = " ".join(header_values).lower()
@@ -138,7 +128,7 @@ def _parse_auth_results_header(raw_email: str) -> dict:
                 "status": CheckStatus.FAIL,
                 "detail": (
                     "No DKIM signature on this email. "
-                    "Enable DKIM signing in your email provider (Google Workspace, Resend, etc.)."
+                    "Enable DKIM signing in your email provider (Google Workspace, SendGrid, etc.)."
                 ),
             }
         else:
@@ -262,7 +252,7 @@ def parse_headers(raw_email: str) -> Tuple[AuthenticationResult, str, str, str, 
     Parse all authentication checks from a raw (reconstructed) email.
 
     Strategy:
-    1. Read Authentication-Results header (GROUND TRUTH from Resend's MX)
+    1. Read Authentication-Results header (GROUND TRUTH from the receiving MX)
     2. DMARC: also query DNS for policy details
     3. Never report FAIL from live crypto checks (causes false positives)
 

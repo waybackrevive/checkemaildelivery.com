@@ -33,7 +33,7 @@ def create_test_session(test_id: str) -> dict:
         "status": "waiting",  # waiting → received → processing → ready
         "created_at": now.isoformat(),
         "expires_at": (now + timedelta(seconds=settings.TEST_TTL_SECONDS)).isoformat(),
-        "raw_email": None,     # Filled when Mailgun webhook fires
+        "raw_email": None,     # Filled when Cloudflare Worker webhook fires
         "from_address": None,
         "subject": None,
     }

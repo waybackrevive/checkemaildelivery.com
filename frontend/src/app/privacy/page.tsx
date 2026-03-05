@@ -86,8 +86,8 @@ export default function PrivacyPage() {
                 <strong className="text-navy">
                   automatically deleted within 1 hour
                 </strong>{" "}
-                of creation. We use Redis with automatic TTL (time-to-live)
-                expiration. There are no backups or archives of your test data.
+                of creation. We use automatic expiration on all stored data.
+                There are no backups or archives of your test data.
               </p>
             </div>
 
@@ -98,9 +98,9 @@ export default function PrivacyPage() {
               </h2>
               <p>
                 We store a counter tied to your IP address to enforce a limit of
-                5 tests per 24-hour period. This counter is stored in Redis and
-                automatically expires after 24 hours. We do not log or retain
-                IP addresses beyond this window.
+                5 tests per 24-hour period. This counter is stored temporarily
+                and automatically expires after 24 hours. We do not log or
+                retain IP addresses beyond this window.
               </p>
             </div>
 
@@ -109,48 +109,14 @@ export default function PrivacyPage() {
               <h2 className="text-lg font-semibold text-navy mb-3">
                 5. Third-Party Services
               </h2>
-              <p>We use the following third-party services to operate:</p>
-              <ul className="list-disc pl-6 mt-3 space-y-1.5">
-                <li>
-                  <strong className="text-navy">Mailgun</strong> — receives
-                  inbound test emails via webhook. Subject to{" "}
-                  <a
-                    href="https://www.mailgun.com/legal/privacy-policy/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-brand underline"
-                  >
-                    Mailgun&apos;s Privacy Policy
-                  </a>
-                  .
-                </li>
-                <li>
-                  <strong className="text-navy">Upstash Redis</strong> —
-                  temporary data storage (auto-expires). Subject to{" "}
-                  <a
-                    href="https://upstash.com/trust/privacy.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-brand underline"
-                  >
-                    Upstash&apos;s Privacy Policy
-                  </a>
-                  .
-                </li>
-                <li>
-                  <strong className="text-navy">Vercel</strong> — frontend
-                  hosting. Subject to{" "}
-                  <a
-                    href="https://vercel.com/legal/privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-brand underline"
-                  >
-                    Vercel&apos;s Privacy Policy
-                  </a>
-                  .
-                </li>
-              </ul>
+              <p>
+                To deliver the service, we use trusted third-party
+                infrastructure providers for email processing, temporary data
+                storage, and website hosting. These providers are bound by
+                their own privacy policies and process data only as necessary
+                to operate our service. We do not share your data with any
+                third party for marketing, analytics, or advertising purposes.
+              </p>
             </div>
 
             {/* 6 */}

@@ -251,12 +251,12 @@ Before testing the full flow:
 - [ ] Frontend dev server is running (`npm run dev`)
 - [ ] `.env.local` has `NEXT_PUBLIC_API_URL=http://localhost:8000`
 - [ ] Backend `.env` has valid Upstash Redis credentials
-- [ ] Resend webhook is set up (use ngrok for local: `ngrok http 8000`)
+- [ ] Cloudflare Email Worker is configured (use ngrok for local: `ngrok http 8000`)
 - [ ] Open `http://localhost:3000` in browser
 
-### Testing Without Resend (Mock Flow)
+### Testing Without Cloudflare (Mock Flow)
 
-If you don't have Resend set up yet, you can test the UI:
+If you don't have Cloudflare Email Worker set up yet, you can test the UI:
 
 1. Start backend + frontend
 2. Call `POST http://localhost:8000/api/test/create` in browser or Postman

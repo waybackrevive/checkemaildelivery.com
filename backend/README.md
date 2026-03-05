@@ -1,138 +1,109 @@
 # CheckEmailDelivery.com — Backend API
 
-FastAPI + SpamAssassin backend that receives emails via **Mailgun inbound webhook**, runs full deliverability analysis (SPF, DKIM, DMARC, blacklists, content, SpamAssassin), and returns a plain-English report.
+FastAPI + SpamAssassin backend that receives emails via **Cloudflare Email Worker**, runs full deliverability analysis (SPF, DKIM, DMARC, blacklists, content, SpamAssassin), and returns a plain-English report.
 
 ---
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────┐
-│  Docker Compose                                │
-│                                                │
-│  ┌──────────────────┐  ┌────────────────────┐  │
-│  │  FastAPI (api)   │  │  SpamAssassin      │  │
-│  │  Port 8000       │──│  Port 783          │  │
-│  └──────────────────┘  └────────────────────┘  │
-│          │                                     │
-│          ├── Upstash Redis (cloud)             │
-│          └── Mailgun Webhook (inbound email)   │
-└────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  User sends email to test-xxxx@checkemaildelivery.com        │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────┐                 │
+│  │  Cloudflare Email Routing               │                 │
+│  │  (MX records → Cloudflare)              │                 │
+│  │  Runs SPF/DKIM/DMARC verification       │                 │
+│  │  Writes Authentication-Results header   │                 │
+│  └────────────────┬────────────────────────┘                 │
+│                   │                                          │
+│                   ▼                                          │
+│  ┌─────────────────────────────────────────┐                 │
+│  │  Cloudflare Email Worker                │                 │
+│  │  Reads raw email stream                 │                 │
+│  │  POSTs complete RFC-2822 to backend     │                 │
+│  └────────────────┬────────────────────────┘                 │
+│                   │                                          │
+│                   ▼                                          │
+│  ┌──────────────────┐  ┌────────────────────┐               │
+│  │  FastAPI (api)   │  │  SpamAssassin      │               │
+│  │  Port 8000       │──│  Port 783          │               │
+│  └──────────────────┘  └────────────────────┘               │
+│          │                                                   │
+│          └── Upstash Redis (cloud)                           │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### How Mailgun Integration Works
-
-```
-User sends email
-      │
-      ▼
-Mailgun MX servers receive it
-(SPF/DKIM/DMARC verified, Authentication-Results header written)
-      │
-      ▼
-Mailgun forwards to POST /api/webhook/mailgun
-(multipart/form-data with body-mime = complete raw RFC-2822 email)
-      │
-      ▼
-Backend reads Authentication-Results header from raw email
-(ground truth — real verification by Mailgun's MX server)
-      │
-      ▼
-Runs analysis pipeline: auth + content + blacklists + SpamAssassin
-      │
-      ▼
-Saves report to Redis → frontend polls → user sees report
-```
-
-**Key advantage:** Mailgun sends the complete raw MIME email in the `body-mime` field. No reconstruction needed — we pass it directly to the analysis pipeline. The `Authentication-Results` header written by Mailgun's MX server is the ground truth for SPF/DKIM/DMARC verification.
+**Key advantage:** Cloudflare forwards the complete raw email stream — nothing is parsed or modified. The `Authentication-Results` header written by Cloudflare's MX server is the ground truth for SPF/DKIM/DMARC verification.
 
 ---
 
-## Mailgun Setup (Step-by-Step)
+## Cloudflare Email Setup (Step-by-Step)
 
-### 1. Create Mailgun Account
+### 1. Enable Email Routing
 
-1. Sign up at [mailgun.com](https://www.mailgun.com) (free tier: 5,000 emails/month)
-2. Go to **Sending** → **Domains** → **Add New Domain**
-3. Add your domain: `checkemaildelivery.com`
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com) → select your domain (`checkemaildelivery.com`)
+2. Click **Email** → **Email Routing**
+3. Click **Enable Email Routing**
+4. Cloudflare will prompt you to add the required MX and TXT DNS records — click **Add records automatically**
 
-### 2. Verify Domain DNS Records
-
-Mailgun will show you DNS records to add. Add these in your DNS provider (Cloudflare, Namecheap, etc.):
+The records Cloudflare adds:
 
 | Type | Name | Value | Purpose |
 |------|------|-------|---------|
-| MX | `@` | `mxa.mailgun.org` (priority 10) | Route inbound email to Mailgun |
-| MX | `@` | `mxb.mailgun.org` (priority 10) | Backup MX |
-| TXT | `@` | `v=spf1 include:mailgun.org ~all` | SPF for sending (optional) |
-| CNAME | `email.checkemaildelivery.com` | `mailgun.org` | Tracking (optional) |
+| MX | `@` | `route1.mx.cloudflare.net` (priority 69) | Route inbound email |
+| MX | `@` | `route2.mx.cloudflare.net` (priority 12) | Backup MX |
+| MX | `@` | `route3.mx.cloudflare.net` (priority 87) | Backup MX |
+| TXT | `@` | `v=spf1 include:_spf.mx.cloudflare.net ~all` | SPF for Cloudflare routing |
 
-> **Critical:** The MX records are what route emails to Mailgun. Without them, sent test emails won't arrive.
+> Wait for DNS propagation (usually instant on Cloudflare).
 
-Wait for DNS propagation (usually 5-30 min). Mailgun dashboard will show "Verified" ✓ when ready.
+### 2. Create the Email Worker
 
-### 3. Get Your Signing Key
+1. Go to **Email** → **Email Routing** → **Email Workers** tab
+2. Click **Create** → name it `checkemaildelivery-email-worker`
+3. Paste the code from `cloudflare-worker/email-worker.js` (included in this repo)
+4. Click **Save and Deploy**
 
-1. Go to Mailgun Dashboard → **Settings** → **API Security** (or **API Keys**)
-2. Find the **HTTP Webhook Signing Key** (starts with something like `key-...`)
-3. Copy it — this goes in your `.env` as `MAILGUN_SIGNING_KEY`
+### 3. Set Worker Environment Variables
 
-> **Note:** This is NOT your API key. It's specifically the webhook signing key used for HMAC verification.
+In Cloudflare Dashboard → **Workers & Pages** → your worker → **Settings** → **Variables**:
 
-### 4. Create Inbound Route
+| Variable | Value | Encrypt? |
+|----------|-------|----------|
+| `BACKEND_URL` | `https://your-api.up.railway.app` | No |
+| `WORKER_SECRET` | Any random string (e.g., `ced-wk-a8f3b2c1d4e5`) | **Yes** |
 
-1. Go to Mailgun Dashboard → **Receiving** → **Create Route**
-2. Configure:
-   - **Expression Type:** Match Recipient
-   - **Expression:** `match_recipient(".*@checkemaildelivery.com")`
-   - **Actions:**
-     - ✅ Check **Forward** → paste your backend URL:
-       - **Local dev:** `https://your-ngrok-url.ngrok.io/api/webhook/mailgun`
-       - **Production:** `https://your-api.up.railway.app/api/webhook/mailgun`
-     - ✅ Check **Store and Notify** (optional, helps debugging)
-   - **Priority:** 0
-   - **Description:** "CheckEmailDelivery inbound email processing"
-3. Click **Create Route**
+> **Important:** The `WORKER_SECRET` must match `CLOUDFLARE_WORKER_SECRET` in your backend `.env`.
 
-### 5. Webhook Signature Verification
+### 4. Create the Catch-All Route
 
-Every Mailgun POST includes three fields for signature verification:
+1. Go to **Email** → **Email Routing** → **Routing rules** tab
+2. Add a **Catch-all** rule: `*@checkemaildelivery.com` → **Send to Worker** → select your worker
+3. Save
 
-| Field | Description |
-|-------|-------------|
-| `timestamp` | Unix timestamp (string) |
-| `token` | Random string |
-| `signature` | HMAC-SHA256 hex digest |
+### 5. What Gets Sent to Your Backend
 
-Our webhook verifies like this:
-```python
-expected = HMAC-SHA256(key=MAILGUN_SIGNING_KEY, msg=timestamp+token)
-hmac.compare_digest(expected, signature)  # timing-attack safe
-```
+The Worker POSTs to `POST /api/webhook/cloudflare`:
 
-If `MAILGUN_SIGNING_KEY` is not set in `.env`, verification is skipped (dev mode).
+| What | Where | Details |
+|------|-------|---------|
+| Raw email | Request body | Complete RFC-2822 (headers + body), unmodified |
+| Content-Type | Header | `message/rfc822` |
+| Recipient | `X-Recipient` header | e.g., `test-7a2b4f8e@checkemaildelivery.com` |
+| Sender | `X-Sender` header | e.g., `user@gmail.com` |
+| Secret | `X-Worker-Secret` header | Shared secret for verification |
 
-### 6. What Mailgun Sends
-
-Mailgun POSTs `multipart/form-data` with these fields:
-
-| Field | Description | Used by us? |
-|-------|-------------|-------------|
-| `body-mime` | **Complete raw RFC-2822 email** (headers + body) | ✅ Primary — passed to analysis pipeline |
-| `recipient` | To address (e.g., `test-7a2b4f8e@checkemaildelivery.com`) | ✅ Extract test ID |
-| `sender` | From address | ✅ Fallback from address |
-| `subject` | Email subject | ✅ Fallback subject |
-| `timestamp` | Unix timestamp | ✅ Signature verification |
-| `token` | Random string | ✅ Signature verification |
-| `signature` | HMAC-SHA256 digest | ✅ Signature verification |
-| `stripped-text` | Plain text body (tags stripped) | ❌ Not used |
-| `stripped-html` | HTML body | ❌ Not used |
+The raw email contains `Authentication-Results`, `Received`, `DKIM-Signature`, and all other original headers.
 
 ---
 
 ## Quick Start (Local Dev)
 
-> **Do Mailgun setup (above) first!**
+> **Do Cloudflare setup (above) first!**
 
 ### 1. Configure Environment
 
@@ -141,14 +112,14 @@ cd backend
 cp ".env copy.example" .env
 ```
 
-Open `.env` and fill in your values:
+Open `.env` and fill in:
 
 ```dotenv
 MAIL_DOMAIN=checkemaildelivery.com
 UPSTASH_REDIS_URL=https://your-db.upstash.io
 UPSTASH_REDIS_TOKEN=your-token-here
-MAILGUN_SIGNING_KEY=your-signing-key-here      # optional in dev
-SPAMASSASSIN_HOST=spamassassin                  # or localhost without Docker
+CLOUDFLARE_WORKER_SECRET=same-secret-as-in-worker
+SPAMASSASSIN_HOST=localhost                     # or spamassassin for Docker
 SPAMASSASSIN_PORT=783
 FRONTEND_URL=http://localhost:3000
 ```
@@ -166,7 +137,7 @@ pip install -r requirements.txt python-dotenv
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-> Without SpamAssassin, the SA section shows "unavailable" with a neutral score. All other analysis (SPF, DKIM, DMARC, blacklists, content) works fully.
+> Without SpamAssassin, the SA section shows "unavailable" with a neutral score. All other analysis works fully.
 
 ### 3. Verify
 
@@ -174,31 +145,27 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 curl http://localhost:8000/health
 # → {"status":"ok"}
 
-# Swagger docs:
-# http://localhost:8000/docs
+# Swagger docs: http://localhost:8000/docs
 ```
 
 ---
 
 ## Testing Locally with ngrok
 
-Mailgun needs a public URL to deliver webhooks. Use ngrok during local dev:
+For local dev, the Cloudflare Worker needs to reach your machine:
 
 ```bash
 # 1. Start ngrok
 ngrok http 8000
-# → Forwarding: https://abc123.ngrok.io → http://localhost:8000
+# → https://abc123.ngrok.io
 
-# 2. Copy the https URL
+# 2. Update Worker env variable:
+#    BACKEND_URL = https://abc123.ngrok.io
 
-# 3. Go to Mailgun → Receiving → Create/Edit Route
-#    Action: forward("https://abc123.ngrok.io/api/webhook/mailgun")
-
-# 4. Send a test email to test-xxxx@checkemaildelivery.com
-#    Watch your terminal — you'll see the webhook processing logs
+# 3. Send a test email — Worker will POST to your local backend
 ```
 
-> **Tip:** ngrok URLs change every restart (free plan). Update the Mailgun route each time, or use a paid ngrok plan for a fixed URL.
+> **Tip:** ngrok URLs change on restart (free plan). Update the Worker's `BACKEND_URL` each time.
 
 ---
 
@@ -208,7 +175,7 @@ ngrok http 8000
 |--------|------|-------------|
 | POST | `/api/test/create` | Create a test session → returns test email address |
 | GET | `/api/test/{id}/status` | Poll for email arrival (frontend calls every 5s) |
-| POST | `/api/webhook/mailgun` | Mailgun posts inbound emails here (multipart/form-data) |
+| POST | `/api/webhook/cloudflare` | Cloudflare Worker posts raw email here |
 | GET | `/api/report/{id}` | Get the full analysis report |
 | GET | `/health` | Health check |
 | GET | `/docs` | Swagger UI (auto-generated) |
@@ -221,9 +188,9 @@ ngrok http 8000
 
 2. User sends email to test-7a2b4f8e@checkemaildelivery.com
 
-3. Mailgun receives it (MX records) → POSTs multipart/form-data to /api/webhook/mailgun
-   → body-mime contains FULL raw email with Authentication-Results header
-   → Backend reads auth results + runs content/blacklist/SpamAssassin checks
+3. Cloudflare receives it (MX records) → Email Worker runs
+   → Worker POSTs raw RFC-2822 email to /api/webhook/cloudflare
+   → Backend reads Authentication-Results + runs full analysis
    → Saves report to Redis, sets status to "ready"
 
 4. Frontend polls GET /api/test/7a2b4f8e/status every 5s
@@ -249,7 +216,7 @@ backend/
 │
 ├── api/routes/
 │   ├── test.py                 # POST /api/test/create, GET /api/test/{id}/status
-│   ├── webhook.py              # POST /api/webhook/mailgun (Mailgun inbound)
+│   ├── webhook.py              # POST /api/webhook/cloudflare (Email Worker)
 │   └── report.py               # GET /api/report/{id}
 │
 ├── services/
@@ -270,6 +237,10 @@ backend/
 └── data/
     ├── spam_words.json          # 80+ trigger words in 6 categories
     └── blacklists.json          # IP blacklists (4 RBLs) + domain blacklists (4 DBLs)
+
+cloudflare-worker/
+├── email-worker.js             # Cloudflare Email Worker (deploy to Cloudflare)
+└── wrangler.toml               # Worker config for wrangler CLI
 ```
 
 ---
@@ -280,7 +251,7 @@ backend/
 
 1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub**
 2. Select your repo → set root directory to `backend`
-3. Add a **SpamAssassin service** (optional):
+3. (Optional) Add a **SpamAssassin service**:
    - Click **+ New** → **Docker Image** → `instantlinux/spamassassin:latest`
    - Note the internal hostname (e.g., `spamassassin.railway.internal`)
 
@@ -291,15 +262,15 @@ backend/
 | `MAIL_DOMAIN` | `checkemaildelivery.com` |
 | `UPSTASH_REDIS_URL` | `https://your-db.upstash.io` |
 | `UPSTASH_REDIS_TOKEN` | `your-token` |
-| `MAILGUN_SIGNING_KEY` | `your-signing-key` |
+| `CLOUDFLARE_WORKER_SECRET` | Same secret as in Worker settings |
 | `SPAMASSASSIN_HOST` | `spamassassin.railway.internal` |
 | `SPAMASSASSIN_PORT` | `783` |
 | `FRONTEND_URL` | `https://checkemaildelivery.com` |
 
-### 3. Update Mailgun Inbound Route
+### 3. Update Worker BACKEND_URL
 
-In Mailgun dashboard → **Receiving** → Edit your route:
-- Action: `forward("https://your-api.up.railway.app/api/webhook/mailgun")`
+After deploying to Railway, update the Worker env variable:
+- `BACKEND_URL` = `https://your-api.up.railway.app`
 
 ### 4. Cost
 
@@ -308,7 +279,7 @@ In Mailgun dashboard → **Receiving** → Edit your route:
 | Railway (API) | ~$5/mo |
 | SpamAssassin | included in Railway |
 | Upstash Redis | Free (10K req/day) |
-| Mailgun | Free (5K emails/mo) |
+| Cloudflare Email Routing | **Free forever** |
 
 ---
 
@@ -319,7 +290,7 @@ In Mailgun dashboard → **Receiving** → Edit your route:
 | `MAIL_DOMAIN` | No | `checkemaildelivery.com` | Domain for test email addresses |
 | `UPSTASH_REDIS_URL` | **Yes** | — | Upstash Redis REST API URL |
 | `UPSTASH_REDIS_TOKEN` | **Yes** | — | Upstash Redis auth token |
-| `MAILGUN_SIGNING_KEY` | No | — | Mailgun webhook signing key (skip in dev) |
+| `CLOUDFLARE_WORKER_SECRET` | No | — | Shared secret with Worker (skip in dev) |
 | `SPAMASSASSIN_HOST` | No | `spamassassin` | SA host (Docker) or `localhost` (no Docker) |
 | `SPAMASSASSIN_PORT` | No | `783` | SpamAssassin spamd port |
 | `FRONTEND_URL` | No | `http://localhost:3000` | CORS allowed origin |
@@ -330,12 +301,11 @@ In Mailgun dashboard → **Receiving** → Edit your route:
 
 | Problem | Fix |
 |---------|-----|
-| Webhook not receiving emails | 1. Check MX records point to `mxa.mailgun.org` / `mxb.mailgun.org`. 2. Check Mailgun route expression matches your domain. 3. Check route action URL is correct. 4. Check Mailgun dashboard → Logs for delivery status. |
-| 401 "Invalid webhook signature" | Verify `MAILGUN_SIGNING_KEY` in `.env` matches the key in Mailgun → Settings → API Security → HTTP Webhook Signing Key |
-| 400 "Missing body-mime" | Mailgun route must have **Forward** action enabled (not just Store). The `body-mime` field contains the raw email. |
-| `Connection refused` on port 783 | SpamAssassin not running. Use Docker or set `SPAMASSASSIN_HOST=localhost` (graceful fallback — SA shows "unavailable") |
-| Redis errors | Check `UPSTASH_REDIS_URL` and `UPSTASH_REDIS_TOKEN` in `.env` |
-| Rate limit hit (429) | Max 5 tests/day per IP. Wait 24h or clear Redis |
-| CORS errors in browser | Check `FRONTEND_URL` matches your frontend origin exactly |
-| Docker build fails on Windows | Make sure Docker Desktop is running with WSL2 backend |
-| SPF/DKIM/DMARC all show FAIL | Check if the raw email has `Authentication-Results` header. If missing, Mailgun may not be passing it — check domain verification in Mailgun dashboard. |
+| Webhook not receiving emails | 1. Check MX records point to `routeN.mx.cloudflare.net`. 2. Check Email Routing is enabled and catch-all routes to Worker. 3. Check Worker `BACKEND_URL` is correct. |
+| 403 "Forbidden" on webhook | `CLOUDFLARE_WORKER_SECRET` in backend `.env` doesn't match `WORKER_SECRET` in Worker settings. They must be identical. |
+| Empty email body | Worker may not be reading `message.raw` correctly. Check Worker logs in Cloudflare dashboard. |
+| `Connection refused` on port 783 | SpamAssassin not running. Use Docker or set `SPAMASSASSIN_HOST=localhost` (graceful fallback). |
+| Redis errors | Check `UPSTASH_REDIS_URL` and `UPSTASH_REDIS_TOKEN` in `.env`. |
+| Rate limit hit (429) | Max 5 tests/day per IP. Wait 24h or clear Redis. |
+| CORS errors in browser | Check `FRONTEND_URL` matches your frontend origin exactly. |
+| SPF/DKIM/DMARC all FAIL | Check if raw email has `Authentication-Results` header. Cloudflare should add it automatically when Email Routing is enabled. |

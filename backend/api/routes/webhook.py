@@ -1,19 +1,16 @@
 """
-Webhook route — Mailgun inbound email
-======================================
+Webhook route — Cloudflare Email Worker
+========================================
 
-Mailgun sends a multipart/form-data POST with `body-mime` containing
-the COMPLETE raw RFC-2822 email.  No reconstruction needed — we pass
-the raw MIME directly to the analysis pipeline.
+Cloudflare Email Routing catches emails at *@checkemaildelivery.com,
+triggers a Worker that reads the raw email stream and POSTs the
+complete RFC-2822 message to this endpoint.
 
-Signature verification uses HMAC-SHA256:
-  sign = HMAC(key=MAILGUN_SIGNING_KEY, msg=timestamp+token)
-  compare with `signature` field using hmac.compare_digest()
+Security: The Worker sends a shared secret in the X-Worker-Secret
+header.  We compare it with CLOUDFLARE_WORKER_SECRET from .env.
 """
 
 import re
-import hmac
-import hashlib
 import logging
 from email import message_from_string
 from typing import Optional
@@ -45,29 +42,25 @@ def _extract_test_id(recipient: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
-def _verify_mailgun_signature(timestamp: str, token: str, signature: str) -> bool:
+def _verify_worker_secret(request: Request) -> bool:
     """
-    Verify Mailgun webhook signature.
+    Verify the shared secret sent by the Cloudflare Worker.
 
-    Mailgun signs every webhook POST:
-      expected = HMAC-SHA256(key=MAILGUN_SIGNING_KEY, msg=timestamp+token)
-    We compare the hex digest with the provided `signature` field.
+    The Worker includes X-Worker-Secret header in every POST.
+    We compare it against CLOUDFLARE_WORKER_SECRET from .env.
+    If the env var is empty, skip verification (dev mode).
     """
-    signing_key = settings.MAILGUN_SIGNING_KEY
-    if not signing_key:
-        logger.warning("MAILGUN_SIGNING_KEY not set — skipping verification (dev mode)")
+    expected = settings.CLOUDFLARE_WORKER_SECRET
+    if not expected:
+        logger.warning("CLOUDFLARE_WORKER_SECRET not set — skipping verification (dev mode)")
         return True
 
-    try:
-        expected = hmac.new(
-            signing_key.encode("utf-8"),
-            f"{timestamp}{token}".encode("utf-8"),
-            hashlib.sha256,
-        ).hexdigest()
-        return hmac.compare_digest(expected, signature)
-    except Exception as e:
-        logger.error(f"Mailgun signature verification error: {e}")
+    provided = request.headers.get("x-worker-secret", "")
+    if not provided:
+        logger.warning("Missing X-Worker-Secret header")
         return False
+
+    return provided == expected
 
 
 def _extract_sender_ip(raw_email: str) -> Optional[str]:
@@ -84,7 +77,6 @@ def _extract_sender_ip(raw_email: str) -> Optional[str]:
         if not received_headers:
             return None
 
-        # Last header = first hop = sender's IP
         last_received = received_headers[-1]
         ip_match = re.search(r"\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]", last_received)
         return ip_match.group(1) if ip_match else None
@@ -93,52 +85,62 @@ def _extract_sender_ip(raw_email: str) -> Optional[str]:
         return None
 
 
+def _extract_email_field(raw_email: str, field_name: str) -> str:
+    """Extract a header field (From, Subject) from raw email."""
+    try:
+        msg = message_from_string(raw_email)
+        return msg.get(field_name, "") or ""
+    except Exception:
+        return ""
+
+
 # ── Webhook endpoint ──────────────────────────────────────────────────────────
 
-@router.post("/mailgun")
-async def receive_mailgun_webhook(request: Request):
+@router.post("/cloudflare")
+async def receive_cloudflare_webhook(request: Request):
     """
-    Mailgun Inbound Email webhook (multipart/form-data).
+    Cloudflare Email Worker webhook.
+
+    The Worker POSTs the complete raw RFC-2822 email as the request body
+    with Content-Type: message/rfc822.  Recipient and sender are passed
+    in X-Recipient and X-Sender headers.
 
     Flow:
-    1. Parse form data — extract body-mime, recipient, signature fields
-    2. Verify HMAC-SHA256 signature
-    3. Extract test ID from recipient address
-    4. Pass raw MIME email directly to analysis pipeline
+    1. Verify X-Worker-Secret matches our shared secret
+    2. Read request body → complete raw email (no parsing needed)
+    3. Extract test ID from X-Recipient header
+    4. Pass raw email directly to analysis pipeline
     5. Build + save report
     6. Update test status to "ready"
     """
     try:
-        form = await request.form()
+        # ── Verify shared secret ──────────────────────────────────────────
+        if not _verify_worker_secret(request):
+            logger.warning("Invalid or missing Worker secret")
+            raise HTTPException(status_code=403, detail="Forbidden")
 
-        # ── Extract fields ────────────────────────────────────────────────
-        raw_email   = form.get("body-mime", "")
-        recipient   = form.get("recipient", "")
-        sender      = form.get("sender", "")
-        subject     = form.get("subject", "")
-        timestamp   = form.get("timestamp", "")
-        token       = form.get("token", "")
-        signature   = form.get("signature", "")
+        # ── Read raw email from request body ──────────────────────────────
+        raw_bytes = await request.body()
+        raw_email = raw_bytes.decode("utf-8", errors="replace")
 
-        # Ensure raw_email is a string
-        if hasattr(raw_email, "read"):
-            raw_email = (await raw_email.read()).decode("utf-8", errors="replace")
-        raw_email = str(raw_email)
+        if not raw_email or len(raw_email.strip()) < 10:
+            logger.warning("Cloudflare webhook received with empty or tiny body")
+            raise HTTPException(status_code=400, detail="Missing email body")
 
-        if not raw_email:
-            logger.warning("Mailgun webhook received with empty body-mime")
-            raise HTTPException(status_code=400, detail="Missing body-mime")
+        # ── Get recipient and sender from headers ─────────────────────────
+        recipient = request.headers.get("x-recipient", "")
+        sender    = request.headers.get("x-sender", "")
 
-        # ── Signature verification ────────────────────────────────────────
-        if not _verify_mailgun_signature(str(timestamp), str(token), str(signature)):
-            logger.warning("Invalid Mailgun webhook signature")
-            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+        # Fallback: extract from the raw email itself
+        if not recipient:
+            recipient = _extract_email_field(raw_email, "To")
+        if not sender:
+            sender = _extract_email_field(raw_email, "From")
 
-        # ── Extract test ID ───────────────────────────────────────────────
-        recipient = str(recipient)
         if not recipient:
             raise HTTPException(status_code=400, detail="Missing recipient")
 
+        # ── Extract test ID ───────────────────────────────────────────────
         test_id = _extract_test_id(recipient)
         if not test_id:
             logger.warning(f"No test ID in recipient: {recipient}")
@@ -150,13 +152,12 @@ async def receive_mailgun_webhook(request: Request):
             raise HTTPException(status_code=404, detail="Test session not found or expired")
 
         # ── Update session ────────────────────────────────────────────────
-        from_addr = str(sender)
-        subj      = str(subject)
+        subject = _extract_email_field(raw_email, "Subject")
 
         session["status"]       = TestStatus.PROCESSING.value
         session["raw_email"]    = raw_email
-        session["from_address"] = from_addr
-        session["subject"]      = subj
+        session["from_address"] = sender
+        session["subject"]      = subject
         update_test_session(test_id, session)
 
         # ── Run analysis pipeline ─────────────────────────────────────────
@@ -189,9 +190,9 @@ async def receive_mailgun_webhook(request: Request):
             reputation    = reputation_result,
             content       = content_result,
             spamassassin  = sa_result,
-            from_address  = parsed_from or from_addr,
+            from_address  = parsed_from or sender,
             from_domain   = from_domain,
-            subject       = parsed_subject or subj,
+            subject       = parsed_subject or subject,
         )
 
         # 6. Save report

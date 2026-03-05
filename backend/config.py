@@ -27,9 +27,9 @@ class Settings:
         default_factory=lambda: os.getenv("UPSTASH_REDIS_TOKEN", "")
     )
 
-    # Mailgun — inbound email webhook signing key
-    MAILGUN_SIGNING_KEY: str = field(
-        default_factory=lambda: os.getenv("MAILGUN_SIGNING_KEY", "")
+    # Cloudflare Email Worker — shared secret for webhook verification
+    CLOUDFLARE_WORKER_SECRET: str = field(
+        default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_SECRET", "")
     )
 
     # SpamAssassin — runs as Docker sidecar in production, localhost for local dev

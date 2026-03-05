@@ -8,8 +8,8 @@ MAIL_DOMAIN=ismyemailspam.com
 UPSTASH_REDIS_URL=https://your-db.upstash.io
 UPSTASH_REDIS_TOKEN=your-token-here
 
-# Mailgun (get from Mailgun Dashboard → Sending → Webhooks → Signing Key)
-MAILGUN_SIGNING_KEY=your-signing-key-here
+# Cloudflare Email Worker (any random secret — must match Worker env variable)
+CLOUDFLARE_WORKER_SECRET=your-random-secret-here
 
 # SpamAssassin (Docker sidecar)
 # Use "spamassassin" when running with docker-compose (default)

@@ -10,10 +10,10 @@ Before you start, you need:
 
 - [x] GitHub repo with your code
 - [x] Upstash Redis account → [upstash.com/redis](https://upstash.com)
-- [x] Resend account → [resend.com](https://resend.com)
+- [x] Cloudflare account with your domain → [cloudflare.com](https://cloudflare.com)
 - [x] Railway account → [railway.app](https://railway.app)
 - [x] Vercel account → [vercel.com](https://vercel.com)
-- [x] Domain (optional: Hostinger, Namecheap, etc.)
+- [x] Domain on Cloudflare DNS (required for Email Routing)
 
 ---
 
@@ -35,7 +35,7 @@ Go to your Railway service → **Variables** tab → Add these:
 | `MAIL_DOMAIN` | Your domain | `checkemaildelivery.com` |
 | `UPSTASH_REDIS_URL` | From Upstash dashboard | `https://your-db.upstash.io` |
 | `UPSTASH_REDIS_TOKEN` | From Upstash dashboard | `AXqtACQ...` |
-| `RESEND_WEBHOOK_SECRET` | From Resend webhook settings | `whsec_abc123...` |
+| `CLOUDFLARE_WORKER_SECRET` | Random secret you generate | `my-super-secret-key-123` |
 | `SPAMASSASSIN_HOST` | Docker service name | `spamassassin` |
 | `SPAMASSASSIN_PORT` | SpamAssassin port | `783` |
 | `FRONTEND_URL` | Your frontend URLs (comma-separated) | See below ⬇️ |
@@ -52,7 +52,7 @@ After deployment completes:
 1. Go to **Settings** → **Networking**
 2. Click **"Generate Domain"**
 3. Copy the URL (e.g., `https://checkemaildelivery-production.up.railway.app`)
-4. **Save this URL** — you'll need it for Vercel and Resend!
+4. **Save this URL** — you'll need it for Vercel and Cloudflare Worker!
 
 ### 1.4 Test Backend Health
 
@@ -101,21 +101,61 @@ After deployment:
 
 ---
 
-## PART 3: Configure Resend Webhook
+## PART 3: Configure Cloudflare Email Routing + Worker
 
-### 3.1 Set Webhook URL
+### 3.1 Enable Email Routing
 
-1. Go to [resend.com/webhooks](https://resend.com/webhooks)
-2. Click **"Add Webhook"**
-3. **Endpoint URL**: `https://your-backend.up.railway.app/api/webhook/resend`
-   👆 Replace with your Railway backend URL
-4. **Events**: Select **"Email Received"** (`email.received`)
-5. Click **"Create Webhook"**
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com) → Select your domain
+2. Click **Email** → **Email Routing** in the sidebar
+3. Click **Enable Email Routing**
+4. Cloudflare will auto-add the required MX and TXT records
 
-### 3.2 Get Webhook Secret
+### 3.2 Deploy the Email Worker
 
-1. After creating the webhook, copy the **Signing Secret** (starts with `whsec_`)
-2. Go to **Railway** → Variables → Update `RESEND_WEBHOOK_SECRET`
+1. Install Wrangler CLI (if not already):
+   ```bash
+   npm install -g wrangler
+   ```
+2. Authenticate:
+   ```bash
+   wrangler login
+   ```
+3. Deploy the worker from the `cloudflare-worker/` directory:
+   ```bash
+   cd cloudflare-worker
+   wrangler deploy
+   ```
+
+### 3.3 Set Worker Secrets
+
+In Cloudflare Dashboard → **Workers & Pages** → Select `checkemaildelivery-email-worker`:
+
+1. Go to **Settings** → **Variables and Secrets**
+2. Add these environment variables:
+
+| Variable | Value |
+|----------|-------|
+| `BACKEND_URL` | Your Railway backend URL (e.g., `https://checkemaildelivery-production.up.railway.app`) |
+| `WORKER_SECRET` | Same secret you set as `CLOUDFLARE_WORKER_SECRET` in Railway |
+
+Or via Wrangler CLI:
+```bash
+wrangler secret put BACKEND_URL
+# Enter: https://your-backend.up.railway.app
+
+wrangler secret put WORKER_SECRET
+# Enter: same value as CLOUDFLARE_WORKER_SECRET in Railway
+```
+
+### 3.4 Create Email Routing Rule
+
+1. Go to **Email** → **Email Routing** → **Routing rules**
+2. Click **Create rule** or set up **Catch-all**:
+   - **Action**: Send to a Worker
+   - **Worker**: Select `checkemaildelivery-email-worker`
+3. Save the rule
+
+Now all emails to `*@checkemaildelivery.com` will be processed by the Worker → forwarded to your backend.
 
 ---
 
@@ -125,11 +165,11 @@ After deployment:
 
 If you have a custom domain (e.g., from Hostinger):
 
-**In Hostinger DNS:**
+**In Cloudflare DNS:**
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
-| A | @ | `76.76.19.21` | 3600 |
-| CNAME | www | `cname.vercel-dns.com` | 3600 |
+| A | @ | `76.76.19.21` | Auto |
+| CNAME | www | `cname.vercel-dns.com` | Auto |
 
 **In Vercel Dashboard:**
 1. Go to your project → **Settings** → **Domains**
@@ -137,20 +177,7 @@ If you have a custom domain (e.g., from Hostinger):
 3. Add `www.checkemaildelivery.com`
 4. Vercel will auto-verify and provision SSL (takes 5-10 min)
 
-### 4.2 Configure Email Routing (Resend)
-
-**In Hostinger (or your DNS provider):**
-
-Add MX records for Resend:
-
-| Type | Name | Value | Priority | TTL |
-|------|------|-------|----------|-----|
-| MX | @ | `feedback-smtp.us-east-1.amazonses.com` | 10 | 3600 |
-
-**In Resend Dashboard:**
-1. Go to **Domains** → Add `checkemaildelivery.com`
-2. Verify DNS records
-3. Wait for green checkmarks (5-15 min)
+> **Note:** Since your domain is already on Cloudflare, the MX records for Email Routing are managed automatically. No need to configure email DNS separately.
 
 ---
 
@@ -160,7 +187,7 @@ Add MX records for Resend:
 
 - [ ] Health check works: `curl https://your-backend.up.railway.app/health`
 - [ ] Swagger docs accessible: `https://your-backend.up.railway.app/docs`
-- [ ] All environment variables set (8 total)
+- [ ] All environment variables set (7 total)
 - [ ] CORS includes all frontend URLs
 
 ### ✅ Frontend (Vercel)
@@ -170,16 +197,18 @@ Add MX records for Resend:
 - [ ] Console shows no CORS errors
 - [ ] "Run Free Test" button creates test email
 
-### ✅ Resend
+### ✅ Cloudflare
 
-- [ ] Domain verified (green checkmarks)
-- [ ] Webhook endpoint set to Railway URL
-- [ ] Webhook secret added to Railway variables
-- [ ] MX records pointing to Resend
+- [ ] Email Routing enabled (green status)
+- [ ] MX records auto-configured by Cloudflare
+- [ ] Email Worker deployed and active
+- [ ] Worker secrets set (BACKEND_URL + WORKER_SECRET)
+- [ ] Routing rule points to worker (catch-all or specific)
+- [ ] Test email arrives at backend (check Railway logs for POST `/api/webhook/cloudflare`)
 
 ### ✅ Custom Domain (if applicable)
 
-- [ ] DNS records added (A + CNAME)
+- [ ] DNS records added (A + CNAME) in Cloudflare
 - [ ] Domain added in Vercel
 - [ ] SSL certificate issued
 - [ ] `FRONTEND_URL` in Railway updated with custom domain
@@ -233,9 +262,12 @@ Railway Dashboard → your service → Deployments → View Logs
 ### Webhook not receiving emails
 
 **Check:**
-1. Resend dashboard → Webhooks → Check endpoint URL matches Railway
-2. Send test email → Check Railway logs for POST `/api/webhook/resend`
-3. Verify `RESEND_WEBHOOK_SECRET` in Railway matches Resend dashboard
+1. Cloudflare Dashboard → Email → Email Routing → Check status is active
+2. Workers & Pages → Select worker → Check it's deployed and active
+3. Worker logs: Workers & Pages → your worker → Logs → Real-time
+4. Send test email → Check Railway logs for POST `/api/webhook/cloudflare`
+5. Verify `WORKER_SECRET` in Cloudflare matches `CLOUDFLARE_WORKER_SECRET` in Railway
+6. Verify `BACKEND_URL` in worker points to correct Railway URL
 
 ### Domain not working
 
@@ -253,21 +285,22 @@ Railway Dashboard → your service → Deployments → View Logs
 | Railway | Free / Hobby | $0 - $5 |
 | Vercel | Hobby | $0 |
 | Upstash Redis | Free | $0 (10K requests/day) |
-| Resend | Free | $0 (100 emails/day) |
-| Hostinger Domain | One-time | ~$10/year |
+| Cloudflare Email Routing | Free forever | $0 (unlimited) |
+| Cloudflare Workers | Free | $0 (100K requests/day) |
+| Domain | Annual | ~$10/year |
 | **TOTAL** | | **$0 - $5/mo** |
 
 ---
 
 ## Environment Variables Quick Reference
 
-### Railway (Backend) — 8 variables
+### Railway (Backend) — 7 variables
 
 ```bash
 MAIL_DOMAIN=checkemaildelivery.com
 UPSTASH_REDIS_URL=https://your-db.upstash.io
 UPSTASH_REDIS_TOKEN=AXqtACQ...
-RESEND_WEBHOOK_SECRET=whsec_abc123...
+CLOUDFLARE_WORKER_SECRET=your-random-secret-here
 SPAMASSASSIN_HOST=spamassassin
 SPAMASSASSIN_PORT=783
 FRONTEND_URL=https://yourdomain.vercel.app,https://yourdomain.com
@@ -279,6 +312,13 @@ FRONTEND_URL=https://yourdomain.vercel.app,https://yourdomain.com
 NEXT_PUBLIC_API_URL=https://your-backend.up.railway.app
 ```
 
+### Cloudflare Worker — 2 variables
+
+```bash
+BACKEND_URL=https://your-backend.up.railway.app
+WORKER_SECRET=your-random-secret-here  # Must match CLOUDFLARE_WORKER_SECRET in Railway
+```
+
 ---
 
 ## Need Help?
@@ -286,7 +326,8 @@ NEXT_PUBLIC_API_URL=https://your-backend.up.railway.app
 If deployment fails:
 1. Check Railway logs (Deployments → View Logs)
 2. Check Vercel logs (Deployments → Function Logs)
-3. Check browser console (F12 → Console tab)
-4. Verify all environment variables are set correctly
-5. Make sure no trailing slashes in URLs
-6. Confirm CORS origins match exactly (https vs http, www vs non-www)
+3. Check Cloudflare Worker logs (Workers & Pages → Logs → Real-time)
+4. Check browser console (F12 → Console tab)
+5. Verify all environment variables are set correctly
+6. Make sure no trailing slashes in URLs
+7. Confirm CORS origins match exactly (https vs http, www vs non-www)

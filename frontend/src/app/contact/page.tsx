@@ -123,10 +123,10 @@ export default function ContactPage() {
                   Is the report accurate?
                 </h3>
                 <p className="text-muted">
-                  We use SpamAssassin and real DNS lookups to generate your
-                  report. While no tool can guarantee inbox placement, our
-                  checks cover the same criteria most inbox providers use to
-                  filter email.
+                  We use industry-standard spam scoring engines and real DNS
+                  lookups to generate your report. While no tool can guarantee
+                  inbox placement, our checks cover the same criteria most
+                  inbox providers use to filter email.
                 </p>
               </div>
               <div>

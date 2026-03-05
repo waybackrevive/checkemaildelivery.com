@@ -17,9 +17,10 @@
 
 ```
 ismyemailspam/
-├── backend/       ← Python FastAPI API  (see backend/README.md)
-├── frontend/      ← Next.js 16 app      (see frontend/README.md)
-└── README.md      ← You are here
+├── backend/            ← Python FastAPI API        (see backend/README.md)
+├── frontend/           ← Next.js 16 app            (see frontend/README.md)
+├── cloudflare-worker/  ← Email Worker (JS, ~40 lines)
+└── README.md           ← You are here
 ```
 
 ---
@@ -35,15 +36,15 @@ Do these **before** touching any code:
 | # | Service | What to do | You'll get |
 |---|---------|-----------|------------|
 | 1 | **Upstash Redis** | Create a free DB at [upstash.com](https://upstash.com) | REST URL + Token |
-| 2 | **Mailgun** | Sign up at [mailgun.com](https://www.mailgun.com) → add your domain → verify DNS | Webhook signing key |
-| 3 | **Domain DNS** | Add MX records per Mailgun instructions (`mxa.mailgun.org`, `mxb.mailgun.org`) | Emails route to Mailgun |
+| 2 | **Cloudflare** | Enable Email Routing on your domain ([dash.cloudflare.com](https://dash.cloudflare.com)) | MX records auto-added |
+| 3 | **Cloudflare Worker** | Deploy `cloudflare-worker/email-worker.js` + set env vars | Email → Worker → backend |
 
 ### PHASE 2 — Backend (~5 min)
 
 ```bash
 cd backend
 cp ".env copy.example" .env      # Copy the template
-# Open .env → paste your Upstash URL/Token + Mailgun signing key
+# Open .env → paste your Upstash URL/Token + Worker secret
 ```
 
 **Option A — With Docker (includes SpamAssassin):**
@@ -71,18 +72,17 @@ Verify: open `http://localhost:3000` → homepage loads with a test email addres
 
 ### PHASE 4 — Connect Webhook (for receiving real emails)
 
-Mailgun needs a public URL to send webhooks to your backend.
+The Cloudflare Worker needs your backend URL.
 
-For **local dev**, use ngrok:
+**For local dev**, use ngrok:
 ```bash
 ngrok http 8000
 # Copy the https URL, e.g. https://abc123.ngrok.io
 ```
 
-Then in **Mailgun dashboard** → Receiving → Create Route:
-- Expression: `match_recipient(".*@checkemaildelivery.com")`
-- Action: `forward("https://abc123.ngrok.io/api/webhook/mailgun")`
-- Check: **Store and notify**
+Then update the Worker's `BACKEND_URL` environment variable to your ngrok URL.
+
+**For production**, set `BACKEND_URL` to your Railway URL.
 
 ### PHASE 5 — Test the Full Flow
 
@@ -101,7 +101,7 @@ Then in **Mailgun dashboard** → Receiving → Create Route:
 | # | Component | Platform | Cost | Notes |
 |---|-----------|----------|------|-------|
 | 1 | Redis | Upstash | Free | Already done in Phase 1 |
-| 2 | Email | Mailgun | Free (5K/mo) | Already done in Phase 1 |
+| 2 | Email | Cloudflare Email Routing | **Free forever** | Already done in Phase 1 |
 | 3 | Backend | [Railway](https://railway.app) | ~$5/mo | Deploy first — frontend needs its URL |
 | 4 | Frontend | [Vercel](https://vercel.com) | Free | Set `NEXT_PUBLIC_API_URL` to Railway URL |
 | 5 | DNS | Cloudflare | Free | Point `checkemaildelivery.com` → Vercel |
@@ -112,7 +112,7 @@ Then in **Mailgun dashboard** → Receiving → Create Route:
 2. **Backend → Railway** — Import repo, set root to `backend`, add env vars (see backend README), add SpamAssassin Docker service
 3. **Frontend → Vercel** — Import repo, set root to `frontend`, add env var:
    - `NEXT_PUBLIC_API_URL` = `https://your-api.up.railway.app`
-4. **Mailgun** — Update inbound route to forward to your Railway backend URL
+4. **Cloudflare Worker** — Update `BACKEND_URL` to your Railway URL
 5. **Backend CORS** — Set `FRONTEND_URL=https://checkemaildelivery.com` in Railway env vars
 6. **DNS** — In Cloudflare, add CNAME: `@ → cname.vercel-dns.com`
 
@@ -127,10 +127,17 @@ Then in **Mailgun dashboard** → Receiving → Create Route:
 | `MAIL_DOMAIN` | Yes | `checkemaildelivery.com` |
 | `UPSTASH_REDIS_URL` | **Yes** | `https://your-db.upstash.io` |
 | `UPSTASH_REDIS_TOKEN` | **Yes** | `your-token` |
-| `MAILGUN_SIGNING_KEY` | No (skip in dev) | `key-xxx` |
+| `CLOUDFLARE_WORKER_SECRET` | No (skip in dev) | `ced-wk-a8f3b2c1d4e5` |
 | `SPAMASSASSIN_HOST` | No | `spamassassin` (Docker) / `localhost` (no Docker) |
 | `SPAMASSASSIN_PORT` | No | `783` |
 | `FRONTEND_URL` | No | `http://localhost:3000` (dev) / `https://checkemaildelivery.com` (prod) |
+
+### Cloudflare Worker (set in Worker Settings → Variables)
+
+| Variable | Value |
+|----------|-------|
+| `BACKEND_URL` | `https://your-api.up.railway.app` |
+| `WORKER_SECRET` | Same as `CLOUDFLARE_WORKER_SECRET` in backend |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -148,7 +155,7 @@ Then in **Mailgun dashboard** → Receiving → Create Route:
 | Backend | Python 3.11+, FastAPI, Pydantic |
 | Analysis | Authentication-Results parsing, checkdmarc, SpamAssassin, BeautifulSoup |
 | Storage | Upstash Redis (auto-expires in 1 hour) |
-| Email | Mailgun Inbound Webhooks |
+| Email | Cloudflare Email Routing + Email Worker |
 
 ---
 
