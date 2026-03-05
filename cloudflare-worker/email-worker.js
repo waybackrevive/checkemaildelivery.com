@@ -7,8 +7,8 @@
  *
  * Setup:
  *   1. Cloudflare Dashboard → your domain → Email → Email Routing → Enable
- *   2. Add catch-all route: *@checkemaildelivery.com → Send to Worker
- *   3. Deploy this Worker (wrangler deploy or paste in dashboard)
+ *   2. Workers & Pages → create worker or use `wrangler deploy`
+ *   3. Email Routing → Routing Rules → Catch-all → Send to Worker
  *   4. Set environment variables in Worker settings:
  *        BACKEND_URL    = https://your-api.up.railway.app
  *        WORKER_SECRET  = same value as CLOUDFLARE_WORKER_SECRET in backend .env
@@ -16,29 +16,58 @@
 
 export default {
   async email(message, env, ctx) {
+    const recipient = message.to;
+    const sender = message.from;
+
+    console.log(`Received email from ${sender} to ${recipient}`);
+
+    // Validate env vars are set
+    if (!env.BACKEND_URL) {
+      console.error("BACKEND_URL env variable is not set!");
+      message.setReject("Configuration error");
+      return;
+    }
+
     try {
-      // Read the complete raw email as text
-      const rawEmail = await new Response(message.raw).text();
+      // Read the complete raw email stream as an ArrayBuffer then decode
+      const rawArrayBuffer = await new Response(message.raw).arrayBuffer();
+      const rawEmail = new TextDecoder("utf-8").decode(rawArrayBuffer);
+
+      if (!rawEmail || rawEmail.length < 10) {
+        console.error("Raw email is empty or too small");
+        message.setReject("Empty email");
+        return;
+      }
+
+      console.log(`Raw email size: ${rawEmail.length} bytes, posting to ${env.BACKEND_URL}`);
 
       // Forward to FastAPI backend
-      const response = await fetch(`${env.BACKEND_URL}/api/webhook/cloudflare`, {
+      const url = `${env.BACKEND_URL}/api/webhook/cloudflare`;
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "message/rfc822",
-          "X-Worker-Secret": env.WORKER_SECRET,
-          "X-Recipient": message.to,
-          "X-Sender": message.from,
+          "X-Worker-Secret": env.WORKER_SECRET || "",
+          "X-Recipient": recipient,
+          "X-Sender": sender,
         },
         body: rawEmail,
       });
 
+      const responseText = await response.text();
+      console.log(`Backend responded: ${response.status} - ${responseText}`);
+
       if (!response.ok) {
-        const text = await response.text();
-        console.error(`Backend returned ${response.status}: ${text}`);
-        message.setReject(`Backend error: ${response.status}`);
+        console.error(`Backend error ${response.status}: ${responseText}`);
+        message.setReject(`Backend error ${response.status}`);
+        return;
       }
+
+      // Success — email processed, do NOT reject
+      console.log(`Successfully processed email for ${recipient}`);
+
     } catch (error) {
-      console.error("Worker error:", error);
+      console.error("Worker error:", error.message, error.stack);
       message.setReject("Worker processing failed");
     }
   },

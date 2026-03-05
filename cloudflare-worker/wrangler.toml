@@ -2,6 +2,11 @@ name = "checkemaildelivery-email-worker"
 main = "email-worker.js"
 compatibility_date = "2024-01-01"
 
+# Email routing binding — required for Workers that handle email events
+[[email_routing]]
+# This tells Cloudflare this Worker can receive emails
+# The actual routing rules (catch-all → this worker) are set in the dashboard
+
 # No [vars] here — set BACKEND_URL and WORKER_SECRET
-# in the Cloudflare dashboard under Worker Settings → Variables
+# in the Cloudflare dashboard under Worker Settings → Variables and Secrets
 # so they stay out of source control.
