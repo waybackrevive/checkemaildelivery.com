@@ -84,11 +84,11 @@ function ProviderCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 my-6">
+    <div className="bg-white shadow-sm border border-border rounded-xl p-6 my-6">
       <div className="flex items-center gap-3 mb-4">
         <span className="text-3xl">{icon}</span>
         <div>
-          <h3 className="font-display text-white text-xl">{name}</h3>
+          <h3 className="font-display text-navy text-xl">{name}</h3>
           <div className="flex gap-3 mt-1">
             <span
               className={`font-mono text-[10px] uppercase px-2 py-0.5 rounded ${
@@ -100,13 +100,13 @@ function ProviderCard({
             >
               {difficulty}
             </span>
-            <span className="font-mono text-[10px] text-muted-light uppercase" style={{ letterSpacing: "0.05em" }}>
+            <span className="font-mono text-[10px] text-muted uppercase" style={{ letterSpacing: "0.05em" }}>
               ⏱ {time}
             </span>
           </div>
         </div>
       </div>
-      <div className="text-[#c8d5e8] text-[14.5px]">{children}</div>
+      <div className="text-muted text-[14.5px]">{children}</div>
     </div>
   );
 }
@@ -118,7 +118,7 @@ function Step({ number, children }: { number: number; children: React.ReactNode 
       <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-brand/20 text-brand font-mono text-sm font-bold rounded-full">
         {number}
       </span>
-      <div className="text-[#c8d5e8] text-sm pt-0.5">{children}</div>
+      <div className="text-muted text-sm pt-0.5">{children}</div>
     </li>
   );
 }
@@ -128,11 +128,11 @@ function CodeBlock({ children, label }: { children: string; label?: string }) {
   return (
     <div className="my-4">
       {label && (
-        <span className="font-mono text-[10px] text-muted-light uppercase block mb-1.5" style={{ letterSpacing: "0.1em" }}>
+        <span className="font-mono text-[10px] text-muted uppercase block mb-1.5" style={{ letterSpacing: "0.1em" }}>
           {label}
         </span>
       )}
-      <pre className="bg-black/30 border border-white/10 rounded-lg px-5 py-4 font-mono text-sm text-brand overflow-x-auto">
+      <pre className="bg-navy/5 border border-border rounded-lg px-5 py-4 font-mono text-sm text-brand overflow-x-auto">
         {children}
       </pre>
     </div>
@@ -141,7 +141,7 @@ function CodeBlock({ children, label }: { children: string; label?: string }) {
 
 export default function HowToFixDKIMPage() {
   return (
-    <div className="min-h-screen bg-navy">
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
@@ -152,29 +152,29 @@ export default function HowToFixDKIMPage() {
       <div className="max-w-[1100px] mx-auto px-6 py-12 grid lg:grid-cols-[1fr_280px] gap-14 items-start">
         <article>
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 font-mono text-xs text-muted-light mb-6">
+          <nav className="flex items-center gap-2 font-mono text-xs text-muted mb-6">
             <Link href="/" className="hover:text-brand transition-colors">Home</Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-brand transition-colors">Blog</Link>
             <span>/</span>
-            <span className="text-white/70">Fix DKIM</span>
+            <span className="text-navy/70">Fix DKIM</span>
           </nav>
 
           <span className="inline-block bg-brand/10 border border-brand/25 text-brand font-mono text-[11px] font-medium uppercase px-3 py-1 rounded-full mb-4" style={{ letterSpacing: "0.1em" }}>
             🔐 Authentication
           </span>
 
-          <h1 className="font-display text-white mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
+          <h1 className="font-display text-navy mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
             How to Fix <em className="italic text-brand">DKIM</em>: Complete Setup Guide
           </h1>
 
-          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-white/10">
-            <span className="font-mono text-muted-light text-[11.5px]">📅 Updated March 2026</span>
-            <span className="font-mono text-muted-light text-[11.5px]">⏱ 7 min read</span>
-            <span className="font-mono text-muted-light text-[11.5px]">📋 Step-by-Step</span>
+          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-border">
+            <span className="font-mono text-muted text-[11.5px]">📅 Updated March 2026</span>
+            <span className="font-mono text-muted text-[11.5px]">⏱ 7 min read</span>
+            <span className="font-mono text-muted text-[11.5px]">📋 Step-by-Step</span>
           </div>
 
-          <div className="article-content text-[#c8d5e8]" style={{ lineHeight: 1.8 }}>
+          <div className="article-content text-muted" style={{ lineHeight: 1.8 }}>
             <p className="mb-5">
               DKIM (DomainKeys Identified Mail) is a cryptographic signature that proves your email
               actually came from your domain. Without it, Gmail, Outlook, and Yahoo will almost
@@ -183,21 +183,21 @@ export default function HowToFixDKIMPage() {
 
             <p className="mb-5">
               This guide shows you exactly how to set up DKIM for{" "}
-              <strong className="text-white">every major email provider</strong>, with screenshots
+              <strong className="text-navy">every major email provider</strong>, with screenshots
               and troubleshooting tips.
             </p>
 
-            <div className="bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+            <div className="bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">💡</span>
-              <span className="text-[#a5cdb5]">
-                <strong className="text-white">First:</strong> Run a test at{" "}
+              <span className="text-navy/80">
+                <strong className="text-navy">First:</strong> Run a test at{" "}
                 <Link href="/" className="text-brand underline">CheckEmailDelivery.com</Link> to
                 confirm DKIM is actually your problem. It takes 60 seconds.
               </span>
             </div>
 
             {/* What is DKIM */}
-            <h2 id="what-is-dkim" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="what-is-dkim" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               What is DKIM?
             </h2>
 
@@ -208,36 +208,36 @@ export default function HowToFixDKIMPage() {
             </p>
 
             <div className="grid md:grid-cols-3 gap-4 my-6">
-              <div className="bg-white/[0.03] border border-white/10 rounded-lg p-4 text-center">
+              <div className="bg-white shadow-sm border border-border rounded-lg p-4 text-center">
                 <span className="text-2xl block mb-2">🔑</span>
-                <span className="text-white text-sm font-medium">Private Key</span>
-                <p className="text-muted-light text-xs mt-1">Stays on your email server</p>
+                <span className="text-navy text-sm font-medium">Private Key</span>
+                <p className="text-muted text-xs mt-1">Stays on your email server</p>
               </div>
-              <div className="bg-white/[0.03] border border-white/10 rounded-lg p-4 text-center">
+              <div className="bg-white shadow-sm border border-border rounded-lg p-4 text-center">
                 <span className="text-2xl block mb-2">📝</span>
-                <span className="text-white text-sm font-medium">Public Key</span>
-                <p className="text-muted-light text-xs mt-1">Published in DNS TXT record</p>
+                <span className="text-navy text-sm font-medium">Public Key</span>
+                <p className="text-muted text-xs mt-1">Published in DNS TXT record</p>
               </div>
-              <div className="bg-white/[0.03] border border-white/10 rounded-lg p-4 text-center">
+              <div className="bg-white shadow-sm border border-border rounded-lg p-4 text-center">
                 <span className="text-2xl block mb-2">✅</span>
-                <span className="text-white text-sm font-medium">Verification</span>
-                <p className="text-muted-light text-xs mt-1">Receiving server checks match</p>
+                <span className="text-navy text-sm font-medium">Verification</span>
+                <p className="text-muted text-xs mt-1">Receiving server checks match</p>
               </div>
             </div>
 
             {/* Provider Instructions */}
-            <h2 id="providers" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="providers" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Setup Instructions by Provider
             </h2>
 
             <ProviderCard name="Google Workspace" icon="📧" difficulty="Easy" time="15 min">
               <ol className="list-none pl-0 space-y-0">
                 <Step number={1}>
-                  Go to <strong className="text-white">admin.google.com</strong> → Apps →
+                  Go to <strong className="text-navy">admin.google.com</strong> → Apps →
                   Google Workspace → Gmail → Authenticate Email
                 </Step>
                 <Step number={2}>
-                  Select your domain and click <strong className="text-white">Generate New Record</strong>
+                  Select your domain and click <strong className="text-navy">Generate New Record</strong>
                 </Step>
                 <Step number={3}>
                   Choose a DKIM key length (2048-bit recommended)
@@ -252,7 +252,7 @@ export default function HowToFixDKIMPage() {
                 </Step>
                 <Step number={6}>
                   Wait 24–48 hours for DNS propagation, then click{" "}
-                  <strong className="text-white">Start Authentication</strong> in Google Admin
+                  <strong className="text-navy">Start Authentication</strong> in Google Admin
                 </Step>
               </ol>
             </ProviderCard>
@@ -260,11 +260,11 @@ export default function HowToFixDKIMPage() {
             <ProviderCard name="Microsoft 365" icon="📬" difficulty="Medium" time="20 min">
               <ol className="list-none pl-0 space-y-0">
                 <Step number={1}>
-                  Go to <strong className="text-white">admin.microsoft.com</strong> → Settings →
+                  Go to <strong className="text-navy">admin.microsoft.com</strong> → Settings →
                   Domains → Select your domain
                 </Step>
                 <Step number={2}>
-                  Click <strong className="text-white">DNS records</strong> and find the DKIM CNAME records
+                  Click <strong className="text-navy">DNS records</strong> and find the DKIM CNAME records
                 </Step>
                 <Step number={3}>
                   Add both CNAME records to your DNS:
@@ -279,7 +279,7 @@ export default function HowToFixDKIMPage() {
                   Go to Microsoft 365 Defender → Email & Collaboration → Policies → DKIM
                 </Step>
                 <Step number={5}>
-                  Select your domain and toggle <strong className="text-white">Sign messages with DKIM</strong> to On
+                  Select your domain and toggle <strong className="text-navy">Sign messages with DKIM</strong> to On
                 </Step>
               </ol>
             </ProviderCard>
@@ -287,48 +287,48 @@ export default function HowToFixDKIMPage() {
             <ProviderCard name="Zoho Mail" icon="✉️" difficulty="Easy" time="10 min">
               <ol className="list-none pl-0 space-y-0">
                 <Step number={1}>
-                  Go to <strong className="text-white">mailadmin.zoho.com</strong> → Domains
+                  Go to <strong className="text-navy">mailadmin.zoho.com</strong> → Domains
                 </Step>
                 <Step number={2}>
-                  Click your domain → <strong className="text-white">Email Configuration</strong> → DKIM
+                  Click your domain → <strong className="text-navy">Email Configuration</strong> → DKIM
                 </Step>
                 <Step number={3}>
-                  Click <strong className="text-white">Add Selector</strong> and generate a key
+                  Click <strong className="text-navy">Add Selector</strong> and generate a key
                 </Step>
                 <Step number={4}>
                   Copy the TXT record and add it to your DNS
                 </Step>
                 <Step number={5}>
-                  Click <strong className="text-white">Verify</strong> in Zoho once DNS propagates
+                  Click <strong className="text-navy">Verify</strong> in Zoho once DNS propagates
                 </Step>
               </ol>
             </ProviderCard>
 
             {/* Troubleshooting */}
-            <h2 id="troubleshooting" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="troubleshooting" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Common DKIM Problems
             </h2>
 
             <div className="space-y-4 mb-6">
               <div className="bg-danger/[0.07] border border-danger/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">DKIM=neutral (no signature)</strong>
-                <p className="text-sm text-muted-light">
+                <strong className="text-navy block mb-1">DKIM=neutral (no signature)</strong>
+                <p className="text-sm text-muted">
                   Your email provider is not signing emails. Go back to your provider&apos;s admin
                   console and enable DKIM signing.
                 </p>
               </div>
 
               <div className="bg-danger/[0.07] border border-danger/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">DKIM=fail (bad signature)</strong>
-                <p className="text-sm text-muted-light">
+                <strong className="text-navy block mb-1">DKIM=fail (bad signature)</strong>
+                <p className="text-sm text-muted">
                   The DNS record doesn&apos;t match. Check for typos in the TXT record or try
                   regenerating the key.
                 </p>
               </div>
 
               <div className="bg-warn/[0.07] border border-warn/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">DKIM=temperror (DNS timeout)</strong>
-                <p className="text-sm text-muted-light">
+                <strong className="text-navy block mb-1">DKIM=temperror (DNS timeout)</strong>
+                <p className="text-sm text-muted">
                   The receiving server couldn&apos;t reach your DNS. This usually resolves itself.
                   If persistent, check your DNS provider&apos;s status.
                 </p>
@@ -336,7 +336,7 @@ export default function HowToFixDKIMPage() {
             </div>
 
             {/* Verification */}
-            <h2 id="verify" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="verify" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Verify Your Setup
             </h2>
 
@@ -352,18 +352,18 @@ export default function HowToFixDKIMPage() {
               </li>
               <li>
                 Send a test email to Gmail and check the headers (click the three dots → &quot;Show
-                original&quot;) — look for <code className="bg-white/10 px-1.5 rounded">dkim=pass</code>
+                original&quot;) — look for <code className="bg-navy/10 px-1.5 rounded">dkim=pass</code>
               </li>
               <li>
                 Use a DNS lookup tool to verify your TXT record exists at{" "}
-                <code className="bg-white/10 px-1.5 rounded">[selector]._domainkey.yourdomain.com</code>
+                <code className="bg-navy/10 px-1.5 rounded">[selector]._domainkey.yourdomain.com</code>
               </li>
             </ol>
 
-            <div className="bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+            <div className="bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">🎯</span>
-              <span className="text-[#a5cdb5]">
-                <strong className="text-white">Need help?</strong> If you&apos;re still having
+              <span className="text-navy/80">
+                <strong className="text-navy">Need help?</strong> If you&apos;re still having
                 trouble, run a test at{" "}
                 <Link href="/" className="text-brand underline">CheckEmailDelivery.com</Link> and
                 we&apos;ll show you exactly what&apos;s wrong.
@@ -374,8 +374,8 @@ export default function HowToFixDKIMPage() {
 
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-24">
-          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 mb-5">
-            <h3 className="font-mono text-[11px] text-muted-light uppercase tracking-wider mb-4">
+          <div className="bg-white shadow-sm border border-border rounded-xl p-6 mb-5">
+            <h3 className="font-mono text-[11px] text-muted uppercase tracking-wider mb-4">
               On This Page
             </h3>
             <ul className="space-y-2">
@@ -388,7 +388,7 @@ export default function HowToFixDKIMPage() {
                 <li key={item.href}>
                   <a
                     href={item.href}
-                    className="text-muted-light text-[13.5px] hover:text-brand transition-colors"
+                    className="text-muted text-[13.5px] hover:text-brand transition-colors"
                   >
                     {item.label}
                   </a>
@@ -404,13 +404,13 @@ export default function HowToFixDKIMPage() {
               border: "1px solid rgba(14,166,110,0.2)",
             }}
           >
-            <h3 className="font-display text-white text-xl mb-2">Check Your DKIM</h3>
-            <p className="text-muted-light text-[13px] mb-4">
+            <h3 className="font-display text-navy text-xl mb-2">Check Your DKIM</h3>
+            <p className="text-muted text-[13px] mb-4">
               Is your DKIM working? Test it instantly.
             </p>
             <Link
               href="/"
-              className="block bg-brand text-white text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
+              className="block bg-brand text-navy text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
             >
               Run Free Test →
             </Link>
@@ -419,7 +419,7 @@ export default function HowToFixDKIMPage() {
       </div>
 
       <section className="max-w-[1100px] mx-auto px-6 pb-16">
-        <h2 className="font-display text-white text-xl mb-5">Related Guides</h2>
+        <h2 className="font-display text-navy text-xl mb-5">Related Guides</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { href: "/blog/why-emails-go-to-spam", category: "DELIVERABILITY", title: "Why Emails Go to Spam: 12 Reasons" },
@@ -429,12 +429,12 @@ export default function HowToFixDKIMPage() {
             <Link
               key={article.href}
               href={article.href}
-              className="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
+              className="bg-white shadow-sm border border-border rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
             >
               <span className="font-mono text-[10px] text-brand uppercase block mb-2" style={{ letterSpacing: "0.1em" }}>
                 {article.category}
               </span>
-              <span className="font-display text-white text-base">{article.title}</span>
+              <span className="font-display text-navy text-base">{article.title}</span>
             </Link>
           ))}
         </div>

@@ -111,19 +111,19 @@ function ReasonCard({
 
   return (
     <div
-      className={`bg-white/[0.03] border border-white/10 rounded-xl p-6 my-6 relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-[3px] before:h-full ${impactStyles[impact]}`}
+      className={`bg-white border border-border rounded-xl p-6 my-6 relative overflow-hidden shadow-sm before:absolute before:top-0 before:left-0 before:w-[3px] before:h-full ${impactStyles[impact]}`}
     >
-      <span className="font-mono text-[11px] text-muted-light uppercase tracking-wider block mb-2">
+      <span className="font-mono text-[11px] text-muted uppercase tracking-wider block mb-2">
         {number}
       </span>
-      <h3 className="font-display text-white text-xl mb-2">{title}</h3>
+      <h3 className="font-display text-navy text-xl mb-2">{title}</h3>
       <span
         className={`inline-block font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded mb-3 ${badgeStyles[impact]}`}
         style={{ letterSpacing: "0.1em" }}
       >
         {impactLabels[impact]}
       </span>
-      <div className="text-[#c8d5e8] text-[14.5px]">{children}</div>
+      <div className="text-muted text-[14.5px]">{children}</div>
     </div>
   );
 }
@@ -131,11 +131,11 @@ function ReasonCard({
 // Fix box component
 function FixBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-brand/[0.07] border border-brand/20 rounded-lg p-5 mt-4">
+    <div className="bg-brand-light border border-brand/20 rounded-lg p-5 mt-4">
       <span className="font-mono text-[11px] font-medium text-brand uppercase tracking-wider block mb-2">
         ✅ How to Fix It
       </span>
-      <div className="text-[#a0bda0] text-sm">{children}</div>
+      <div className="text-navy/80 text-sm">{children}</div>
     </div>
   );
 }
@@ -149,16 +149,16 @@ function Callout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-3.5 bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+    <div className="flex gap-3.5 bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
       <span className="text-xl flex-shrink-0 mt-0.5">{icon}</span>
-      <div className="text-[#a5cdb5] text-[14.5px]">{children}</div>
+      <div className="text-navy/80 text-[14.5px]">{children}</div>
     </div>
   );
 }
 
 export default function WhyEmailsGoToSpamPage() {
   return (
-    <div className="min-h-screen bg-navy">
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -175,7 +175,7 @@ export default function WhyEmailsGoToSpamPage() {
         {/* Article */}
         <article>
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 font-mono text-xs text-muted-light mb-6">
+          <nav className="flex items-center gap-2 font-mono text-xs text-muted mb-6">
             <Link href="/" className="hover:text-brand transition-colors">
               Home
             </Link>
@@ -184,7 +184,7 @@ export default function WhyEmailsGoToSpamPage() {
               Blog
             </Link>
             <span>/</span>
-            <span className="text-white/70">Why Emails Go to Spam</span>
+            <span className="text-navy/70">Why Emails Go to Spam</span>
           </nav>
 
           {/* Category */}
@@ -193,21 +193,21 @@ export default function WhyEmailsGoToSpamPage() {
           </span>
 
           {/* Title */}
-          <h1 className="font-display text-white mb-5" style={{ fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 400, lineHeight: 1.25 }}>
+          <h1 className="font-display text-navy mb-5" style={{ fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 400, lineHeight: 1.25 }}>
             Why Are My Emails Going to <em className="italic text-danger">Spam?</em>
             <br />
             12 Real Reasons + Exact Fixes
           </h1>
 
           {/* Meta */}
-          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-white/10">
-            <span className="font-mono text-muted-light text-[11.5px]">📅 Updated March 2026</span>
-            <span className="font-mono text-muted-light text-[11.5px]">⏱ 9 min read</span>
-            <span className="font-mono text-muted-light text-[11.5px]">📊 Covers Gmail, Outlook, Yahoo</span>
+          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-border">
+            <span className="font-mono text-muted text-[11.5px]">📅 Updated March 2026</span>
+            <span className="font-mono text-muted text-[11.5px]">⏱ 9 min read</span>
+            <span className="font-mono text-muted text-[11.5px]">📊 Covers Gmail, Outlook, Yahoo</span>
           </div>
 
           {/* Content */}
-          <div className="article-content text-[#c8d5e8]" style={{ lineHeight: 1.8 }}>
+          <div className="article-content text-muted" style={{ lineHeight: 1.8 }}>
             <p className="mb-5">
               You wrote a perfectly good email. The person knows you. But it went straight to spam.
               Why?
@@ -215,7 +215,7 @@ export default function WhyEmailsGoToSpamPage() {
 
             <p className="mb-5">
               The answer is almost never about the words you used. It is almost always about{" "}
-              <strong className="text-white">
+              <strong className="text-navy">
                 technical signals your domain sends before a single word is read
               </strong>
               . Spam filters make their decision in milliseconds — based on your DNS records, your
@@ -229,7 +229,7 @@ export default function WhyEmailsGoToSpamPage() {
 
             <Callout icon="🧪">
               <p>
-                <strong className="text-white">Before you read:</strong> Run a free test on{" "}
+                <strong className="text-navy">Before you read:</strong> Run a free test on{" "}
                 <Link href="/" className="text-brand underline underline-offset-2">
                   CheckEmailDelivery.com
                 </Link>{" "}
@@ -239,24 +239,24 @@ export default function WhyEmailsGoToSpamPage() {
             </Callout>
 
             {/* Summary Table */}
-            <h2 className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Quick Summary: All 12 Reasons
             </h2>
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse my-6">
                 <thead>
-                  <tr className="bg-white/5">
-                    <th className="text-left px-4 py-3 text-muted-light font-mono text-[11px] uppercase tracking-wider border-b border-white/10">
+                  <tr className="bg-navy/5">
+                    <th className="text-left px-4 py-3 text-muted font-mono text-[11px] uppercase tracking-wider border-b border-border">
                       #
                     </th>
-                    <th className="text-left px-4 py-3 text-muted-light font-mono text-[11px] uppercase tracking-wider border-b border-white/10">
+                    <th className="text-left px-4 py-3 text-muted font-mono text-[11px] uppercase tracking-wider border-b border-border">
                       Reason
                     </th>
-                    <th className="text-left px-4 py-3 text-muted-light font-mono text-[11px] uppercase tracking-wider border-b border-white/10">
+                    <th className="text-left px-4 py-3 text-muted font-mono text-[11px] uppercase tracking-wider border-b border-border">
                       Impact
                     </th>
-                    <th className="text-left px-4 py-3 text-muted-light font-mono text-[11px] uppercase tracking-wider border-b border-white/10">
+                    <th className="text-left px-4 py-3 text-muted font-mono text-[11px] uppercase tracking-wider border-b border-border">
                       Fix Time
                     </th>
                   </tr>
@@ -278,7 +278,7 @@ export default function WhyEmailsGoToSpamPage() {
                   ].map(([num, reason, impact, time]) => (
                     <tr
                       key={num}
-                      className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                      className="border-b border-border hover:bg-navy/5 transition-colors"
                     >
                       <td className="px-4 py-3">{num}</td>
                       <td className="px-4 py-3">{reason}</td>
@@ -295,7 +295,7 @@ export default function WhyEmailsGoToSpamPage() {
                           {impact.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-light">{time}</td>
+                      <td className="px-4 py-3 text-muted">{time}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -305,7 +305,7 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Reason 1: DKIM */}
             <h2
               id="dkim"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reason 1: Missing or Broken DKIM Signature
             </h2>
@@ -320,7 +320,7 @@ export default function WhyEmailsGoToSpamPage() {
 
             <p className="mb-4">
               Google made DKIM{" "}
-              <strong className="text-white">mandatory for all bulk senders in 2024</strong>.
+              <strong className="text-navy">mandatory for all bulk senders in 2024</strong>.
               Without DKIM, Gmail automatically places your email in spam — not sometimes, always.
             </p>
 
@@ -337,7 +337,7 @@ export default function WhyEmailsGoToSpamPage() {
                 <li>Click &quot;Generate DKIM Key&quot;</li>
                 <li>
                   Copy the TXT record (looks like:{" "}
-                  <code className="bg-white/10 px-1.5 py-0.5 rounded text-brand">
+                  <code className="bg-navy/10 px-1.5 py-0.5 rounded text-brand">
                     v=DKIM1; k=rsa; p=MIGf...
                   </code>
                   )
@@ -358,7 +358,7 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Reason 2: SPF */}
             <h2
               id="spf"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reason 2: SPF Record Missing or Failing
             </h2>
@@ -372,7 +372,7 @@ export default function WhyEmailsGoToSpamPage() {
             </ReasonCard>
 
             <p className="mb-4">An SPF record is a DNS TXT record that looks like this:</p>
-            <pre className="bg-black/30 border border-white/10 rounded-lg px-5 py-4 font-mono text-sm text-brand overflow-x-auto mb-4">
+            <pre className="bg-navy/5 border border-border rounded-lg px-5 py-4 font-mono text-sm text-brand overflow-x-auto mb-4">
               v=spf1 include:_spf.google.com ~all
             </pre>
 
@@ -380,15 +380,15 @@ export default function WhyEmailsGoToSpamPage() {
               <ol className="list-decimal ml-5 space-y-1.5">
                 <li>Go to your domain registrar (Cloudflare, GoDaddy, Namecheap, etc.)</li>
                 <li>
-                  Add a TXT record: Name = <code className="bg-white/10 px-1 rounded">@</code>,
+                  Add a TXT record: Name = <code className="bg-navy/10 px-1 rounded">@</code>,
                   Value ={" "}
-                  <code className="bg-white/10 px-1 rounded">
+                  <code className="bg-navy/10 px-1 rounded">
                     v=spf1 include:[YOUR_PROVIDER] -all
                   </code>
                 </li>
                 <li>
                   Common SPF includes: Google Workspace →{" "}
-                  <code className="bg-white/10 px-1 rounded">include:_spf.google.com</code>
+                  <code className="bg-navy/10 px-1 rounded">include:_spf.google.com</code>
                 </li>
                 <li>Never have more than 10 DNS lookups in one SPF record</li>
               </ol>
@@ -397,7 +397,7 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Reason 3: DMARC */}
             <h2
               id="dmarc"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reason 3: No DMARC Policy
             </h2>
@@ -414,11 +414,11 @@ export default function WhyEmailsGoToSpamPage() {
               <ol className="list-decimal ml-5 space-y-1.5">
                 <li>
                   Add a DNS TXT record: Name ={" "}
-                  <code className="bg-white/10 px-1 rounded">_dmarc</code>
+                  <code className="bg-navy/10 px-1 rounded">_dmarc</code>
                 </li>
                 <li>
                   Start with:{" "}
-                  <code className="bg-white/10 px-1 rounded">
+                  <code className="bg-navy/10 px-1 rounded">
                     v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com
                   </code>
                 </li>
@@ -430,7 +430,7 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Reason 4-6: Blacklists and New Domain */}
             <h2
               id="blacklist"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reason 4–5: Your IP or Domain is Blacklisted
             </h2>
@@ -460,7 +460,7 @@ export default function WhyEmailsGoToSpamPage() {
 
             <h2
               id="new-domain"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reason 6: New Domain (Under 30 Days Old)
             </h2>
@@ -488,26 +488,26 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Content reasons 7-10 */}
             <h2
               id="content"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reasons 7–10: Content Issues
             </h2>
 
             <div className="space-y-4 mb-6">
               <p>
-                <strong className="text-white">7. Spam Trigger Words:</strong> Words like FREE,
+                <strong className="text-navy">7. Spam Trigger Words:</strong> Words like FREE,
                 GUARANTEED, ACT NOW, LIMITED TIME, CLICK HERE trigger filters heavily.
               </p>
               <p>
-                <strong className="text-white">8. ALL CAPS Subject Line:</strong> Using more than
+                <strong className="text-navy">8. ALL CAPS Subject Line:</strong> Using more than
                 1-2 capitalized words in a subject line is a major spam signal.
               </p>
               <p>
-                <strong className="text-white">9. Too Many Images:</strong> Keep a 60/40 text-to-image
+                <strong className="text-navy">9. Too Many Images:</strong> Keep a 60/40 text-to-image
                 ratio. Emails that are mostly images look like spam.
               </p>
               <p>
-                <strong className="text-white">10. URL Shorteners:</strong> bit.ly, tinyurl, t.co are
+                <strong className="text-navy">10. URL Shorteners:</strong> bit.ly, tinyurl, t.co are
                 all flagged. Always use full, direct URLs.
               </p>
             </div>
@@ -515,19 +515,19 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Reasons 11-12: Reputation */}
             <h2
               id="reputation"
-              className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10"
+              className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border"
             >
               Reasons 11–12: Sender Reputation
             </h2>
 
             <p className="mb-4">
-              <strong className="text-white">11. High Spam Complaint Rate:</strong> Gmail&apos;s
+              <strong className="text-navy">11. High Spam Complaint Rate:</strong> Gmail&apos;s
               threshold is 0.1% — if more than 1 in 1,000 recipients marks you as spam, you&apos;re
               in the danger zone. Above 0.3%, delivery is severely impacted.
             </p>
 
             <p className="mb-4">
-              <strong className="text-white">12. Unverified Email Lists:</strong> Old, unverified
+              <strong className="text-navy">12. Unverified Email Lists:</strong> Old, unverified
               lists contain inactive addresses that bounce. High bounce rates (above 2%) damage your
               reputation. Some addresses become spam traps that instantly blacklist you.
             </p>
@@ -545,7 +545,7 @@ export default function WhyEmailsGoToSpamPage() {
             {/* Final CTA */}
             <Callout icon="🎯">
               <p>
-                <strong className="text-white">Ready to check your email?</strong> Run a free
+                <strong className="text-navy">Ready to check your email?</strong> Run a free
                 deliverability test at{" "}
                 <Link href="/" className="text-brand underline">
                   CheckEmailDelivery.com
@@ -560,8 +560,8 @@ export default function WhyEmailsGoToSpamPage() {
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-24">
           {/* TOC */}
-          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 mb-5">
-            <h3 className="font-mono text-[11px] text-muted-light uppercase tracking-wider mb-4">
+          <div className="bg-white shadow-sm border border-border rounded-xl p-6 mb-5">
+            <h3 className="font-mono text-[11px] text-muted uppercase tracking-wider mb-4">
               On This Page
             </h3>
             <ul className="space-y-2">
@@ -577,7 +577,7 @@ export default function WhyEmailsGoToSpamPage() {
                 <li key={item.href}>
                   <a
                     href={item.href}
-                    className="text-muted-light text-[13.5px] hover:text-brand transition-colors"
+                    className="text-muted text-[13.5px] hover:text-brand transition-colors"
                   >
                     {item.label}
                   </a>
@@ -594,13 +594,13 @@ export default function WhyEmailsGoToSpamPage() {
               border: "1px solid rgba(14,166,110,0.2)",
             }}
           >
-            <h3 className="font-display text-white text-xl mb-2">Check Your Email</h3>
-            <p className="text-muted-light text-[13px] mb-4">
+            <h3 className="font-display text-navy text-xl mb-2">Check Your Email</h3>
+            <p className="text-muted text-[13px] mb-4">
               Run a free deliverability test and see which issues affect you.
             </p>
             <Link
               href="/"
-              className="block bg-brand text-white text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
+              className="block bg-brand text-navy text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
             >
               Run Free Test →
             </Link>
@@ -610,7 +610,7 @@ export default function WhyEmailsGoToSpamPage() {
 
       {/* Related Articles */}
       <section className="max-w-[1100px] mx-auto px-6 pb-16">
-        <h2 className="font-display text-white text-xl mb-5">Related Guides</h2>
+        <h2 className="font-display text-navy text-xl mb-5">Related Guides</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
             {
@@ -632,7 +632,7 @@ export default function WhyEmailsGoToSpamPage() {
             <Link
               key={article.href}
               href={article.href}
-              className="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
+              className="bg-white shadow-sm border border-border rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
             >
               <span
                 className="font-mono text-[10px] text-brand uppercase block mb-2"
@@ -640,7 +640,7 @@ export default function WhyEmailsGoToSpamPage() {
               >
                 {article.category}
               </span>
-              <span className="font-display text-white text-base">{article.title}</span>
+              <span className="font-display text-navy text-base">{article.title}</span>
             </Link>
           ))}
         </div>

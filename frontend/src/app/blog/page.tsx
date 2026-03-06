@@ -103,7 +103,7 @@ const blogPosts = [
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-navy">
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <SiteHeader />
 
       {/* Hero */}
@@ -114,10 +114,10 @@ export default function BlogPage() {
         >
           📚 Knowledge Base
         </span>
-        <h1 className="font-display text-white mb-4" style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 400 }}>
+        <h1 className="font-display text-navy mb-4" style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 400 }}>
           Email Deliverability <em className="italic text-brand">Blog</em>
         </h1>
-        <p className="text-muted-light max-w-[520px] mx-auto" style={{ fontSize: "16px", lineHeight: 1.7 }}>
+        <p className="text-muted max-w-[520px] mx-auto" style={{ fontSize: "16px", lineHeight: 1.7 }}>
           Practical guides on SPF, DKIM, DMARC, and getting your emails to the inbox. Written for real senders, not
           engineers.
         </p>
@@ -127,13 +127,13 @@ export default function BlogPage() {
       <section className="max-w-[1100px] mx-auto px-6 mb-12">
         <Link
           href={`/blog/${featuredPost.slug}`}
-          className="block bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden hover:border-brand/30 hover:-translate-y-0.5 transition-all"
+          className="block bg-navy rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-all shadow-lg"
         >
           <div className="grid md:grid-columns-2 min-h-[280px]" style={{ gridTemplateColumns: "1fr 420px" }}>
             {/* Visual */}
             <div
               className="p-10 flex flex-col justify-between relative overflow-hidden"
-              style={{ background: "linear-gradient(135deg, rgba(14,166,110,0.15), rgba(12,26,46,0.8))" }}
+              style={{ background: "linear-gradient(135deg, rgba(14,166,110,0.15), rgba(12,26,46,0.95))" }}
             >
               <span className="inline-flex items-center gap-1.5 bg-brand text-white text-[10px] font-bold uppercase px-2.5 py-1 rounded w-fit" style={{ letterSpacing: "0.1em" }}>
                 ⭐ Featured
@@ -146,7 +146,7 @@ export default function BlogPage() {
               </span>
             </div>
             {/* Content */}
-            <div className="p-10 flex flex-col justify-between">
+            <div className="p-10 flex flex-col justify-between bg-navy">
               <div>
                 <span className={`font-mono text-[11px] font-medium uppercase mb-3 block ${featuredPost.categoryColor}`} style={{ letterSpacing: "0.08em" }}>
                   {featuredPost.category}
@@ -154,13 +154,13 @@ export default function BlogPage() {
                 <h2 className="font-display text-white text-[26px] mb-3" style={{ lineHeight: 1.3 }}>
                   {featuredPost.title}
                 </h2>
-                <p className="text-muted-light text-[14px] mb-6" style={{ lineHeight: 1.7 }}>
+                <p className="text-white/60 text-[14px] mb-6" style={{ lineHeight: 1.7 }}>
                   {featuredPost.excerpt}
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                <span className="font-mono text-muted-light text-xs">📅 {featuredPost.updated}</span>
-                <span className="font-mono text-muted-light text-xs">⏱ {featuredPost.readTime}</span>
+                <span className="font-mono text-white/50 text-xs">📅 {featuredPost.updated}</span>
+                <span className="font-mono text-white/50 text-xs">⏱ {featuredPost.readTime}</span>
                 <span className="ml-auto text-brand text-[13px] font-semibold flex items-center gap-1.5 group-hover:gap-2.5 transition-all">
                   Read Guide →
                 </span>
@@ -172,13 +172,13 @@ export default function BlogPage() {
 
       {/* All Posts Grid */}
       <section className="max-w-[1100px] mx-auto px-6 pb-20">
-        <h2 className="font-display text-white text-[22px] mb-6">All Guides</h2>
+        <h2 className="font-display text-navy text-[22px] mb-6">All Guides</h2>
         <div className="grid md:grid-cols-3 gap-5">
           {blogPosts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group bg-white/[0.03] border border-white/10 rounded-xl p-7 flex flex-col hover:border-brand/25 hover:-translate-y-0.5 transition-all relative overflow-hidden"
+              className="group bg-white border border-border rounded-xl p-7 flex flex-col hover:border-brand/40 hover:-translate-y-0.5 hover:shadow-lg transition-all relative overflow-hidden"
             >
               <div
                 className="absolute top-0 left-0 right-0 h-0.5 bg-transparent group-hover:bg-gradient-to-r group-hover:from-brand group-hover:to-transparent transition-all"
@@ -189,14 +189,14 @@ export default function BlogPage() {
               <span className={`font-mono text-[10.5px] font-medium uppercase mb-2.5 ${post.categoryClass}`} style={{ letterSpacing: "0.1em" }}>
                 {post.category}
               </span>
-              <h3 className="font-display text-white text-lg mb-2.5 flex-1" style={{ lineHeight: 1.4 }}>
+              <h3 className="font-display text-navy text-lg mb-2.5 flex-1" style={{ lineHeight: 1.4 }}>
                 {post.title}
               </h3>
-              <p className="text-muted-light text-[13px] mb-5" style={{ lineHeight: 1.6 }}>
+              <p className="text-muted text-[13px] mb-5" style={{ lineHeight: 1.6 }}>
                 {post.excerpt}
               </p>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-muted-light text-xs">⏱ {post.readTime}</span>
+                <span className="font-mono text-muted text-xs">⏱ {post.readTime}</span>
                 <span className="text-brand text-[13px] font-semibold">Read →</span>
               </div>
             </Link>
@@ -205,9 +205,9 @@ export default function BlogPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-brand/5 border-y border-brand/20 py-16 px-6 text-center">
+      <section className="bg-navy py-16 px-6 text-center">
         <h2 className="font-display text-white text-[28px] mb-3">Ready to test your email?</h2>
-        <p className="text-muted-light mb-6 max-w-[400px] mx-auto">
+        <p className="text-white/60 mb-6 max-w-[400px] mx-auto">
           Send a test email and get a full delivery audit — authentication, reputation, content, blacklists.
         </p>
         <Link

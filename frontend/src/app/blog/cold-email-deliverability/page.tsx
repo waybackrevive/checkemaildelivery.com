@@ -45,14 +45,14 @@ function TipCard({
   };
 
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 my-5">
+    <div className="bg-white shadow-sm border border-border rounded-xl p-6 my-5">
       <div className="flex items-start gap-4">
         <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-brand/20 text-brand font-mono text-lg font-bold rounded-lg">
           {number}
         </span>
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-display text-white text-lg">{title}</h3>
+            <h3 className="font-display text-navy text-lg">{title}</h3>
             <span
               className={`font-mono text-[9px] font-bold uppercase px-2 py-0.5 rounded ${categoryStyles[category].badge}`}
               style={{ letterSpacing: "0.1em" }}
@@ -60,7 +60,7 @@ function TipCard({
               {categoryStyles[category].label}
             </span>
           </div>
-          <div className="text-[#c8d5e8] text-[14.5px]">{children}</div>
+          <div className="text-muted text-[14.5px]">{children}</div>
         </div>
       </div>
     </div>
@@ -69,67 +69,67 @@ function TipCard({
 
 export default function ColdEmailDeliverabilityPage() {
   return (
-    <div className="min-h-screen bg-navy">
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <SiteHeader />
 
       <div className="max-w-[1100px] mx-auto px-6 py-12 grid lg:grid-cols-[1fr_280px] gap-14 items-start">
         <article>
-          <nav className="flex items-center gap-2 font-mono text-xs text-muted-light mb-6">
+          <nav className="flex items-center gap-2 font-mono text-xs text-muted mb-6">
             <Link href="/" className="hover:text-brand transition-colors">Home</Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-brand transition-colors">Blog</Link>
             <span>/</span>
-            <span className="text-white/70">Cold Email Deliverability</span>
+            <span className="text-navy/70">Cold Email Deliverability</span>
           </nav>
 
           <span className="inline-block bg-warn/10 border border-warn/25 text-warn font-mono text-[11px] font-medium uppercase px-3 py-1 rounded-full mb-4" style={{ letterSpacing: "0.1em" }}>
             📤 Outreach
           </span>
 
-          <h1 className="font-display text-white mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
+          <h1 className="font-display text-navy mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
             Cold Email Deliverability:<br />
             <em className="italic text-brand">15 Tips</em> to Land in the Inbox
           </h1>
 
-          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-white/10">
-            <span className="font-mono text-muted-light text-[11.5px]">📅 Updated March 2026</span>
-            <span className="font-mono text-muted-light text-[11.5px]">⏱ 10 min read</span>
-            <span className="font-mono text-muted-light text-[11.5px]">📊 For Sales & Marketing</span>
+          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-border">
+            <span className="font-mono text-muted text-[11.5px]">📅 Updated March 2026</span>
+            <span className="font-mono text-muted text-[11.5px]">⏱ 10 min read</span>
+            <span className="font-mono text-muted text-[11.5px]">📊 For Sales & Marketing</span>
           </div>
 
-          <div className="article-content text-[#c8d5e8]" style={{ lineHeight: 1.8 }}>
+          <div className="article-content text-muted" style={{ lineHeight: 1.8 }}>
             <p className="mb-5">
               Cold email is hard. Even if you write the perfect message, poor deliverability means
               your prospects never see it. This guide covers the{" "}
-              <strong className="text-white">15 most effective strategies</strong> to ensure your
+              <strong className="text-navy">15 most effective strategies</strong> to ensure your
               cold emails reach the inbox.
             </p>
 
             <div className="bg-danger/[0.07] border border-danger/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">⚠️</span>
               <span className="text-[#ffb4b4]">
-                <strong className="text-white">Reality check:</strong> Cold email deliverability is
+                <strong className="text-navy">Reality check:</strong> Cold email deliverability is
                 harder than ever. Gmail and Microsoft have tightened filters significantly since
                 2024. Following these tips is no longer optional — it&apos;s survival.
               </span>
             </div>
 
-            <h2 id="setup" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="setup" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Part 1: Technical Setup
             </h2>
 
             <TipCard number={1} title="Use a Dedicated Sending Domain" category="setup">
               <p>
                 Never send cold email from your main domain. Use a separate domain (e.g.,
-                <code className="bg-white/10 px-1 mx-1 rounded">getacme.com</code> if your main is
-                <code className="bg-white/10 px-1 mx-1 rounded">acme.com</code>). If the sending
+                <code className="bg-navy/10 px-1 mx-1 rounded">getacme.com</code> if your main is
+                <code className="bg-navy/10 px-1 mx-1 rounded">acme.com</code>). If the sending
                 domain gets burned, your main domain stays clean.
               </p>
             </TipCard>
 
             <TipCard number={2} title="Set Up SPF, DKIM, and DMARC" category="setup">
               <p>
-                All three authentication records are <strong className="text-white">mandatory</strong>.
+                All three authentication records are <strong className="text-navy">mandatory</strong>.
                 Without them, Gmail and Microsoft will send your emails straight to spam. See our
                 guides for{" "}
                 <Link href="/blog/spf-record-guide" className="text-brand underline">SPF</Link>,{" "}
@@ -167,7 +167,7 @@ export default function ColdEmailDeliverabilityPage() {
               </p>
             </TipCard>
 
-            <h2 id="content" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="content" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Part 2: Email Content
             </h2>
 
@@ -209,7 +209,7 @@ export default function ColdEmailDeliverabilityPage() {
               </p>
             </TipCard>
 
-            <h2 id="strategy" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="strategy" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Part 3: Sending Strategy
             </h2>
 
@@ -250,11 +250,11 @@ export default function ColdEmailDeliverabilityPage() {
               </p>
             </TipCard>
 
-            <h2 id="checklist" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="checklist" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Quick Checklist
             </h2>
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 my-6">
+            <div className="bg-white shadow-sm border border-border rounded-xl p-6 my-6">
               <ul className="space-y-2">
                 {[
                   "Using a dedicated sending domain (not main domain)",
@@ -271,16 +271,16 @@ export default function ColdEmailDeliverabilityPage() {
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="text-brand mt-0.5">☐</span>
-                    <span className="text-[#c8d5e8]">{item}</span>
+                    <span className="text-muted">{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+            <div className="bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">🎯</span>
-              <span className="text-[#a5cdb5]">
-                <strong className="text-white">Check your setup:</strong> Run a free deliverability
+              <span className="text-navy/80">
+                <strong className="text-navy">Check your setup:</strong> Run a free deliverability
                 test at{" "}
                 <Link href="/" className="text-brand underline">CheckEmailDelivery.com</Link> before
                 launching your cold email campaign.
@@ -290,8 +290,8 @@ export default function ColdEmailDeliverabilityPage() {
         </article>
 
         <aside className="lg:sticky lg:top-24">
-          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 mb-5">
-            <h3 className="font-mono text-[11px] text-muted-light uppercase tracking-wider mb-4">
+          <div className="bg-white shadow-sm border border-border rounded-xl p-6 mb-5">
+            <h3 className="font-mono text-[11px] text-muted uppercase tracking-wider mb-4">
               On This Page
             </h3>
             <ul className="space-y-2">
@@ -302,7 +302,7 @@ export default function ColdEmailDeliverabilityPage() {
                 { href: "#checklist", label: "Quick Checklist" },
               ].map((item) => (
                 <li key={item.href}>
-                  <a href={item.href} className="text-muted-light text-[13.5px] hover:text-brand transition-colors">
+                  <a href={item.href} className="text-muted text-[13.5px] hover:text-brand transition-colors">
                     {item.label}
                   </a>
                 </li>
@@ -317,13 +317,13 @@ export default function ColdEmailDeliverabilityPage() {
               border: "1px solid rgba(14,166,110,0.2)",
             }}
           >
-            <h3 className="font-display text-white text-xl mb-2">Pre-Campaign Check</h3>
-            <p className="text-muted-light text-[13px] mb-4">
+            <h3 className="font-display text-navy text-xl mb-2">Pre-Campaign Check</h3>
+            <p className="text-muted text-[13px] mb-4">
               Test your email setup before sending.
             </p>
             <Link
               href="/"
-              className="block bg-brand text-white text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
+              className="block bg-brand text-navy text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
             >
               Run Free Test →
             </Link>
@@ -332,7 +332,7 @@ export default function ColdEmailDeliverabilityPage() {
       </div>
 
       <section className="max-w-[1100px] mx-auto px-6 pb-16">
-        <h2 className="font-display text-white text-xl mb-5">Related Guides</h2>
+        <h2 className="font-display text-navy text-xl mb-5">Related Guides</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { href: "/blog/spam-trigger-words", category: "CONTENT", title: "Spam Trigger Words to Avoid" },
@@ -342,12 +342,12 @@ export default function ColdEmailDeliverabilityPage() {
             <Link
               key={article.href}
               href={article.href}
-              className="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
+              className="bg-white shadow-sm border border-border rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
             >
               <span className="font-mono text-[10px] text-brand uppercase block mb-2" style={{ letterSpacing: "0.1em" }}>
                 {article.category}
               </span>
-              <span className="font-display text-white text-base">{article.title}</span>
+              <span className="font-display text-navy text-base">{article.title}</span>
             </Link>
           ))}
         </div>

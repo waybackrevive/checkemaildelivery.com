@@ -49,10 +49,10 @@ function BlacklistCard({
   };
 
   return (
-    <div className={`bg-white/[0.03] border border-white/10 ${severityStyles[severity].border} border-l-[3px] rounded-xl p-6 my-6`}>
+    <div className={`bg-white shadow-sm border border-border ${severityStyles[severity].border} border-l-[3px] rounded-xl p-6 my-6`}>
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h3 className="font-display text-white text-xl mb-2">{name}</h3>
+          <h3 className="font-display text-navy text-xl mb-2">{name}</h3>
           <span
             className={`inline-block font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded ${severityStyles[severity].badge}`}
             style={{ letterSpacing: "0.1em" }}
@@ -64,7 +64,7 @@ function BlacklistCard({
           href={removalLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-shrink-0 bg-brand text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors"
+          className="flex-shrink-0 bg-brand text-navy text-xs font-semibold px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors"
         >
           Request Removal →
         </a>
@@ -72,74 +72,74 @@ function BlacklistCard({
 
       <div className="grid md:grid-cols-2 gap-4 mb-4 text-sm">
         <div>
-          <span className="font-mono text-[10px] text-muted-light uppercase block mb-1" style={{ letterSpacing: "0.1em" }}>
+          <span className="font-mono text-[10px] text-muted uppercase block mb-1" style={{ letterSpacing: "0.1em" }}>
             Impact
           </span>
-          <span className="text-white">{impact}</span>
+          <span className="text-navy">{impact}</span>
         </div>
         <div>
-          <span className="font-mono text-[10px] text-muted-light uppercase block mb-1" style={{ letterSpacing: "0.1em" }}>
+          <span className="font-mono text-[10px] text-muted uppercase block mb-1" style={{ letterSpacing: "0.1em" }}>
             Auto-Expiry
           </span>
-          <span className="text-white">{autoExpiry || "Manual removal required"}</span>
+          <span className="text-navy">{autoExpiry || "Manual removal required"}</span>
         </div>
       </div>
 
-      <div className="text-[#c8d5e8] text-[14.5px]">{children}</div>
+      <div className="text-muted text-[14.5px]">{children}</div>
     </div>
   );
 }
 
 export default function BlacklistRemovalPage() {
   return (
-    <div className="min-h-screen bg-navy">
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <SiteHeader />
 
       <div className="max-w-[1100px] mx-auto px-6 py-12 grid lg:grid-cols-[1fr_280px] gap-14 items-start">
         <article>
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 font-mono text-xs text-muted-light mb-6">
+          <nav className="flex items-center gap-2 font-mono text-xs text-muted mb-6">
             <Link href="/" className="hover:text-brand transition-colors">Home</Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-brand transition-colors">Blog</Link>
             <span>/</span>
-            <span className="text-white/70">Blacklist Removal</span>
+            <span className="text-navy/70">Blacklist Removal</span>
           </nav>
 
           <span className="inline-block bg-danger/10 border border-danger/25 text-danger font-mono text-[11px] font-medium uppercase px-3 py-1 rounded-full mb-4" style={{ letterSpacing: "0.1em" }}>
             🚨 Reputation
           </span>
 
-          <h1 className="font-display text-white mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
+          <h1 className="font-display text-navy mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
             Email Blacklist Removal: <br />
             <em className="italic text-danger">How to Get Delisted Fast</em>
           </h1>
 
-          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-white/10">
-            <span className="font-mono text-muted-light text-[11.5px]">📅 Updated March 2026</span>
-            <span className="font-mono text-muted-light text-[11.5px]">⏱ 8 min read</span>
-            <span className="font-mono text-muted-light text-[11.5px]">🔗 Direct removal links</span>
+          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-border">
+            <span className="font-mono text-muted text-[11.5px]">📅 Updated March 2026</span>
+            <span className="font-mono text-muted text-[11.5px]">⏱ 8 min read</span>
+            <span className="font-mono text-muted text-[11.5px]">🔗 Direct removal links</span>
           </div>
 
-          <div className="article-content text-[#c8d5e8]" style={{ lineHeight: 1.8 }}>
+          <div className="article-content text-muted" style={{ lineHeight: 1.8 }}>
             <p className="mb-5">
               If your IP address or domain is on an email blacklist, your emails will be blocked
               or sent to spam by millions of mail servers worldwide. This guide gives you{" "}
-              <strong className="text-white">direct links to request removal</strong> from every
+              <strong className="text-navy">direct links to request removal</strong> from every
               major blacklist, plus instructions on how to stay off them.
             </p>
 
-            <div className="bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+            <div className="bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">🔍</span>
-              <span className="text-[#a5cdb5]">
-                <strong className="text-white">First:</strong> Check which blacklists you&apos;re on at{" "}
+              <span className="text-navy/80">
+                <strong className="text-navy">First:</strong> Check which blacklists you&apos;re on at{" "}
                 <Link href="/" className="text-brand underline">CheckEmailDelivery.com</Link> — we
                 scan 40+ blacklists instantly.
               </span>
             </div>
 
             {/* How Blacklists Work */}
-            <h2 id="how-blacklists-work" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="how-blacklists-work" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               How Email Blacklists Work
             </h2>
 
@@ -153,23 +153,23 @@ export default function BlacklistRemovalPage() {
             <div className="grid md:grid-cols-3 gap-4 my-6">
               <div className="bg-danger/[0.07] border border-danger/20 rounded-lg p-4 text-center">
                 <span className="text-2xl block mb-2">🚫</span>
-                <span className="text-white text-sm font-medium">Blocked</span>
-                <p className="text-muted-light text-xs mt-1">Spamhaus, Barracuda</p>
+                <span className="text-navy text-sm font-medium">Blocked</span>
+                <p className="text-muted text-xs mt-1">Spamhaus, Barracuda</p>
               </div>
               <div className="bg-warn/[0.07] border border-warn/20 rounded-lg p-4 text-center">
                 <span className="text-2xl block mb-2">📥</span>
-                <span className="text-white text-sm font-medium">Spam Folder</span>
-                <p className="text-muted-light text-xs mt-1">SpamCop, SORBS</p>
+                <span className="text-navy text-sm font-medium">Spam Folder</span>
+                <p className="text-muted text-xs mt-1">SpamCop, SORBS</p>
               </div>
               <div className="bg-[#60a5fa]/[0.07] border border-[#60a5fa]/20 rounded-lg p-4 text-center">
                 <span className="text-2xl block mb-2">⚠️</span>
-                <span className="text-white text-sm font-medium">Lower Trust</span>
-                <p className="text-muted-light text-xs mt-1">UCEPROTECT, JustSpam</p>
+                <span className="text-navy text-sm font-medium">Lower Trust</span>
+                <p className="text-muted text-xs mt-1">UCEPROTECT, JustSpam</p>
               </div>
             </div>
 
             {/* Major Blacklists */}
-            <h2 id="major-blacklists" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="major-blacklists" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Major Blacklists & Removal Instructions
             </h2>
 
@@ -265,43 +265,43 @@ export default function BlacklistRemovalPage() {
             </BlacklistCard>
 
             {/* Prevention */}
-            <h2 id="prevention" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="prevention" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               How to Stay Off Blacklists
             </h2>
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 my-6">
+            <div className="bg-white shadow-sm border border-border rounded-xl p-6 my-6">
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <span className="text-brand">✓</span>
-                  <span><strong className="text-white">Set up SPF, DKIM, and DMARC</strong> — properly authenticated emails are rarely blacklisted</span>
+                  <span><strong className="text-navy">Set up SPF, DKIM, and DMARC</strong> — properly authenticated emails are rarely blacklisted</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-brand">✓</span>
-                  <span><strong className="text-white">Never buy email lists</strong> — purchased lists contain spam traps</span>
+                  <span><strong className="text-navy">Never buy email lists</strong> — purchased lists contain spam traps</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-brand">✓</span>
-                  <span><strong className="text-white">Use double opt-in</strong> — confirm subscribers actually want your email</span>
+                  <span><strong className="text-navy">Use double opt-in</strong> — confirm subscribers actually want your email</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-brand">✓</span>
-                  <span><strong className="text-white">Monitor bounce rates</strong> — keep below 2%</span>
+                  <span><strong className="text-navy">Monitor bounce rates</strong> — keep below 2%</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-brand">✓</span>
-                  <span><strong className="text-white">Include easy unsubscribe</strong> — reduce spam complaints</span>
+                  <span><strong className="text-navy">Include easy unsubscribe</strong> — reduce spam complaints</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-brand">✓</span>
-                  <span><strong className="text-white">Warm up new IPs slowly</strong> — don&apos;t blast 10K emails day one</span>
+                  <span><strong className="text-navy">Warm up new IPs slowly</strong> — don&apos;t blast 10K emails day one</span>
                 </li>
               </ul>
             </div>
 
-            <div className="bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+            <div className="bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">🎯</span>
-              <span className="text-[#a5cdb5]">
-                <strong className="text-white">Check your status now:</strong> Run a free blacklist
+              <span className="text-navy/80">
+                <strong className="text-navy">Check your status now:</strong> Run a free blacklist
                 check at{" "}
                 <Link href="/" className="text-brand underline">CheckEmailDelivery.com</Link> — we
                 scan 40+ blacklists and show you exactly where you&apos;re listed.
@@ -312,8 +312,8 @@ export default function BlacklistRemovalPage() {
 
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-24">
-          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 mb-5">
-            <h3 className="font-mono text-[11px] text-muted-light uppercase tracking-wider mb-4">
+          <div className="bg-white shadow-sm border border-border rounded-xl p-6 mb-5">
+            <h3 className="font-mono text-[11px] text-muted uppercase tracking-wider mb-4">
               On This Page
             </h3>
             <ul className="space-y-2">
@@ -325,7 +325,7 @@ export default function BlacklistRemovalPage() {
                 <li key={item.href}>
                   <a
                     href={item.href}
-                    className="text-muted-light text-[13.5px] hover:text-brand transition-colors"
+                    className="text-muted text-[13.5px] hover:text-brand transition-colors"
                   >
                     {item.label}
                   </a>
@@ -341,13 +341,13 @@ export default function BlacklistRemovalPage() {
               border: "1px solid rgba(14,166,110,0.2)",
             }}
           >
-            <h3 className="font-display text-white text-xl mb-2">Blacklist Check</h3>
-            <p className="text-muted-light text-[13px] mb-4">
+            <h3 className="font-display text-navy text-xl mb-2">Blacklist Check</h3>
+            <p className="text-muted text-[13px] mb-4">
               Scan 40+ blacklists instantly.
             </p>
             <Link
               href="/"
-              className="block bg-brand text-white text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
+              className="block bg-brand text-navy text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
             >
               Run Free Test →
             </Link>
@@ -356,7 +356,7 @@ export default function BlacklistRemovalPage() {
       </div>
 
       <section className="max-w-[1100px] mx-auto px-6 pb-16">
-        <h2 className="font-display text-white text-xl mb-5">Related Guides</h2>
+        <h2 className="font-display text-navy text-xl mb-5">Related Guides</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { href: "/blog/why-emails-go-to-spam", category: "DELIVERABILITY", title: "Why Emails Go to Spam: 12 Reasons" },
@@ -366,12 +366,12 @@ export default function BlacklistRemovalPage() {
             <Link
               key={article.href}
               href={article.href}
-              className="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
+              className="bg-white shadow-sm border border-border rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
             >
               <span className="font-mono text-[10px] text-brand uppercase block mb-2" style={{ letterSpacing: "0.1em" }}>
                 {article.category}
               </span>
-              <span className="font-display text-white text-base">{article.title}</span>
+              <span className="font-display text-navy text-base">{article.title}</span>
             </Link>
           ))}
         </div>

@@ -44,10 +44,10 @@ function WordCategory({
   };
 
   return (
-    <div className={`bg-white/[0.03] border border-white/10 ${severityStyles[severity]} border-l-[3px] rounded-xl p-6 my-6`}>
+    <div className={`bg-white shadow-sm border border-border ${severityStyles[severity]} border-l-[3px] rounded-xl p-6 my-6`}>
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">{icon}</span>
-        <h3 className="font-display text-white text-xl">{title}</h3>
+        <h3 className="font-display text-navy text-xl">{title}</h3>
         <span
           className={`ml-auto font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
             severity === "high"
@@ -65,7 +65,7 @@ function WordCategory({
         {words.map((word) => (
           <span
             key={word}
-            className="bg-white/5 border border-white/10 text-muted-light text-sm px-3 py-1.5 rounded-lg font-mono"
+            className="bg-navy/5 border border-border text-muted text-sm px-3 py-1.5 rounded-lg font-mono"
           >
             {word}
           </span>
@@ -77,35 +77,35 @@ function WordCategory({
 
 export default function SpamTriggerWordsPage() {
   return (
-    <div className="min-h-screen bg-navy">
+    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <SiteHeader />
 
       <div className="max-w-[1100px] mx-auto px-6 py-12 grid lg:grid-cols-[1fr_280px] gap-14 items-start">
         <article>
-          <nav className="flex items-center gap-2 font-mono text-xs text-muted-light mb-6">
+          <nav className="flex items-center gap-2 font-mono text-xs text-muted mb-6">
             <Link href="/" className="hover:text-brand transition-colors">Home</Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-brand transition-colors">Blog</Link>
             <span>/</span>
-            <span className="text-white/70">Spam Trigger Words</span>
+            <span className="text-navy/70">Spam Trigger Words</span>
           </nav>
 
           <span className="inline-block bg-danger/10 border border-danger/25 text-danger font-mono text-[11px] font-medium uppercase px-3 py-1 rounded-full mb-4" style={{ letterSpacing: "0.1em" }}>
             📝 Content
           </span>
 
-          <h1 className="font-display text-white mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
+          <h1 className="font-display text-navy mb-5" style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, lineHeight: 1.25 }}>
             <em className="italic text-danger">Spam Trigger Words</em>:<br />
             200+ Words to Avoid in Email
           </h1>
 
-          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-white/10">
-            <span className="font-mono text-muted-light text-[11.5px]">📅 Updated March 2026</span>
-            <span className="font-mono text-muted-light text-[11.5px]">⏱ 5 min read</span>
-            <span className="font-mono text-muted-light text-[11.5px]">📋 Reference List</span>
+          <div className="flex items-center gap-5 flex-wrap mb-8 pb-6 border-b border-border">
+            <span className="font-mono text-muted text-[11.5px]">📅 Updated March 2026</span>
+            <span className="font-mono text-muted text-[11.5px]">⏱ 5 min read</span>
+            <span className="font-mono text-muted text-[11.5px]">📋 Reference List</span>
           </div>
 
-          <div className="article-content text-[#c8d5e8]" style={{ lineHeight: 1.8 }}>
+          <div className="article-content text-muted" style={{ lineHeight: 1.8 }}>
             <p className="mb-5">
               Email spam filters use word analysis as one signal to determine if your email is spam.
               While modern filters (Gmail, Outlook, SpamAssassin) consider many factors, certain
@@ -115,13 +115,13 @@ export default function SpamTriggerWordsPage() {
             <div className="bg-warn/[0.07] border border-warn/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">💡</span>
               <span className="text-[#ffd699]">
-                <strong className="text-white">Important:</strong> Context matters. Using
+                <strong className="text-navy">Important:</strong> Context matters. Using
                 &quot;free&quot; once in a legitimate email won&apos;t kill you. But combining
                 multiple trigger words with poor authentication and suspicious links? Spam folder.
               </span>
             </div>
 
-            <h2 id="urgency" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="urgency" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Urgency & Pressure Words
             </h2>
 
@@ -166,7 +166,7 @@ export default function SpamTriggerWordsPage() {
               ]}
             />
 
-            <h2 id="money" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="money" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Money & Financial Words
             </h2>
 
@@ -230,7 +230,7 @@ export default function SpamTriggerWordsPage() {
               ]}
             />
 
-            <h2 id="guarantees" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="guarantees" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Guarantees & Promises
             </h2>
 
@@ -275,7 +275,7 @@ export default function SpamTriggerWordsPage() {
               ]}
             />
 
-            <h2 id="calls-to-action" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="calls-to-action" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Aggressive Calls to Action
             </h2>
 
@@ -298,7 +298,7 @@ export default function SpamTriggerWordsPage() {
               ]}
             />
 
-            <h2 id="all-caps" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="all-caps" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Formatting Triggers
             </h2>
 
@@ -308,45 +308,45 @@ export default function SpamTriggerWordsPage() {
 
             <div className="space-y-4 mb-6">
               <div className="bg-danger/[0.07] border border-danger/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">❌ ALL CAPS</strong>
-                <p className="text-muted-light text-sm">
+                <strong className="text-navy block mb-1">❌ ALL CAPS</strong>
+                <p className="text-muted text-sm">
                   Using full caps in subject lines or email body is a major spam signal.
                   SpamAssassin adds significant score for &quot;SHOUTING&quot;.
                 </p>
               </div>
 
               <div className="bg-danger/[0.07] border border-danger/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">❌ Excessive punctuation!!!</strong>
-                <p className="text-muted-light text-sm">
+                <strong className="text-navy block mb-1">❌ Excessive punctuation!!!</strong>
+                <p className="text-muted text-sm">
                   Multiple exclamation marks, question marks, or dollar signs ($$$) trigger filters.
                 </p>
               </div>
 
               <div className="bg-warn/[0.07] border border-warn/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">⚠️ Colored/oversized text</strong>
-                <p className="text-muted-light text-sm">
+                <strong className="text-navy block mb-1">⚠️ Colored/oversized text</strong>
+                <p className="text-muted text-sm">
                   Large red text, unusual fonts, and excessive colors look spammy to filters.
                 </p>
               </div>
 
               <div className="bg-warn/[0.07] border border-warn/20 rounded-lg p-4">
-                <strong className="text-white block mb-1">⚠️ Too many images</strong>
-                <p className="text-muted-light text-sm">
+                <strong className="text-navy block mb-1">⚠️ Too many images</strong>
+                <p className="text-muted text-sm">
                   Image-heavy emails with little text are flagged. Keep a 60/40 text-to-image ratio.
                 </p>
               </div>
             </div>
 
-            <h2 id="safer-alternatives" className="font-display text-white text-2xl mt-12 mb-4 pt-3 border-t border-white/10">
+            <h2 id="safer-alternatives" className="font-display text-navy text-2xl mt-12 mb-4 pt-3 border-t border-border">
               Safer Alternatives
             </h2>
 
             <div className="overflow-x-auto mb-6">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-white/5">
-                    <th className="text-left px-4 py-3 text-muted-light font-mono text-[11px] uppercase border-b border-white/10">Instead of</th>
-                    <th className="text-left px-4 py-3 text-muted-light font-mono text-[11px] uppercase border-b border-white/10">Try this</th>
+                  <tr className="bg-navy/5">
+                    <th className="text-left px-4 py-3 text-muted font-mono text-[11px] uppercase border-b border-border">Instead of</th>
+                    <th className="text-left px-4 py-3 text-muted font-mono text-[11px] uppercase border-b border-border">Try this</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -360,7 +360,7 @@ export default function SpamTriggerWordsPage() {
                     ["Don't miss out", "You might be interested in"],
                     ["URGENT", "Important update, time-sensitive"],
                   ].map(([avoid, use]) => (
-                    <tr key={avoid} className="border-b border-white/5">
+                    <tr key={avoid} className="border-b border-border">
                       <td className="px-4 py-3"><span className="text-danger">{avoid}</span></td>
                       <td className="px-4 py-3 text-brand">{use}</td>
                     </tr>
@@ -369,10 +369,10 @@ export default function SpamTriggerWordsPage() {
               </table>
             </div>
 
-            <div className="bg-brand/[0.07] border border-brand/20 rounded-xl p-5 my-7">
+            <div className="bg-brand-light border border-brand/20 rounded-xl p-5 my-7">
               <span className="text-xl mr-2">🎯</span>
-              <span className="text-[#a5cdb5]">
-                <strong className="text-white">Test your email:</strong> Run a spam test at{" "}
+              <span className="text-navy/80">
+                <strong className="text-navy">Test your email:</strong> Run a spam test at{" "}
                 <Link href="/" className="text-brand underline">CheckEmailDelivery.com</Link> — our
                 SpamAssassin integration checks for trigger words and other spam signals.
               </span>
@@ -381,8 +381,8 @@ export default function SpamTriggerWordsPage() {
         </article>
 
         <aside className="lg:sticky lg:top-24">
-          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 mb-5">
-            <h3 className="font-mono text-[11px] text-muted-light uppercase tracking-wider mb-4">
+          <div className="bg-white shadow-sm border border-border rounded-xl p-6 mb-5">
+            <h3 className="font-mono text-[11px] text-muted uppercase tracking-wider mb-4">
               On This Page
             </h3>
             <ul className="space-y-2">
@@ -395,7 +395,7 @@ export default function SpamTriggerWordsPage() {
                 { href: "#safer-alternatives", label: "Alternatives" },
               ].map((item) => (
                 <li key={item.href}>
-                  <a href={item.href} className="text-muted-light text-[13.5px] hover:text-brand transition-colors">
+                  <a href={item.href} className="text-muted text-[13.5px] hover:text-brand transition-colors">
                     {item.label}
                   </a>
                 </li>
@@ -410,13 +410,13 @@ export default function SpamTriggerWordsPage() {
               border: "1px solid rgba(14,166,110,0.2)",
             }}
           >
-            <h3 className="font-display text-white text-xl mb-2">Spam Check</h3>
-            <p className="text-muted-light text-[13px] mb-4">
+            <h3 className="font-display text-navy text-xl mb-2">Spam Check</h3>
+            <p className="text-muted text-[13px] mb-4">
               Test your email for spam triggers.
             </p>
             <Link
               href="/"
-              className="block bg-brand text-white text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
+              className="block bg-brand text-navy text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
             >
               Run Free Test →
             </Link>
@@ -425,7 +425,7 @@ export default function SpamTriggerWordsPage() {
       </div>
 
       <section className="max-w-[1100px] mx-auto px-6 pb-16">
-        <h2 className="font-display text-white text-xl mb-5">Related Guides</h2>
+        <h2 className="font-display text-navy text-xl mb-5">Related Guides</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { href: "/blog/why-emails-go-to-spam", category: "DELIVERABILITY", title: "Why Emails Go to Spam" },
@@ -435,12 +435,12 @@ export default function SpamTriggerWordsPage() {
             <Link
               key={article.href}
               href={article.href}
-              className="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
+              className="bg-white shadow-sm border border-border rounded-xl p-6 hover:border-brand/30 hover:-translate-y-0.5 transition-all"
             >
               <span className="font-mono text-[10px] text-brand uppercase block mb-2" style={{ letterSpacing: "0.1em" }}>
                 {article.category}
               </span>
-              <span className="font-display text-white text-base">{article.title}</span>
+              <span className="font-display text-navy text-base">{article.title}</span>
             </Link>
           ))}
         </div>
