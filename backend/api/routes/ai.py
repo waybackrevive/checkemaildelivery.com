@@ -1,15 +1,15 @@
 """
 AI Email Writer API Route
 
-Transforms raw thoughts into polished, spam-free emails using AI.
-Server-side API key - no user authentication required.
+Transforms raw thoughts into polished, spam-free emails using Groq's FREE API.
+Production-ready with model fallback and proper error handling.
 """
 
 import logging
 from typing import Literal
 from datetime import datetime
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 import httpx
 
@@ -21,6 +21,14 @@ router = APIRouter(prefix="/ai", tags=["AI Email Writer"])
 
 # Simple in-memory rate limiting (for production, use Redis)
 _rate_limits: dict[str, list[datetime]] = {}
+
+# Groq models to try in order (all FREE tier)
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",      # Latest Llama 3.3 70B
+    "llama-3.1-70b-versatile",      # Llama 3.1 70B  
+    "llama-3.1-8b-instant",         # Fast fallback
+    "mixtral-8x7b-32768",           # Mixtral fallback
+]
 
 
 class EmailWriteRequest(BaseModel):
@@ -58,11 +66,10 @@ def _check_rate_limit(ip: str) -> tuple[bool, int]:
     today_key = now.strftime("%Y-%m-%d")
     rate_key = f"{ip}:{today_key}"
     
-    # Clean old entries
     if rate_key not in _rate_limits:
         _rate_limits[rate_key] = []
     
-    # Remove old entries (older than 24h)
+    # Remove entries older than 24h
     _rate_limits[rate_key] = [
         t for t in _rate_limits[rate_key]
         if (now - t).total_seconds() < 86400
@@ -89,16 +96,92 @@ def _record_request(ip: str):
     _rate_limits[rate_key].append(now)
 
 
+async def _call_groq_api(prompt: str, system_prompt: str) -> tuple[bool, str]:
+    """
+    Call Groq API with model fallback.
+    Returns (success, result_or_error)
+    """
+    api_key = settings.GROQ_API_KEY
+    
+    if not api_key:
+        return False, "API key not configured"
+    
+    last_error = ""
+    
+    for model in GROQ_MODELS:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1024
+                    }
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if content:
+                        logger.info(f"Groq API success with model: {model}")
+                        return True, content.strip()
+                    else:
+                        last_error = "Empty response from API"
+                        continue
+                
+                # Handle specific errors
+                if response.status_code == 401:
+                    return False, "Invalid API key"
+                
+                if response.status_code == 429:
+                    return False, "Rate limit exceeded. Please try again in a minute."
+                
+                # Try to extract error message from response
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("error", {}).get("message", "")
+                    if "model" in error_msg.lower():
+                        # Model not found, try next
+                        logger.warning(f"Model {model} not available: {error_msg}")
+                        last_error = error_msg
+                        continue
+                    last_error = error_msg or f"HTTP {response.status_code}"
+                except:
+                    last_error = f"HTTP {response.status_code}: {response.text[:200]}"
+                
+                logger.warning(f"Groq API error with {model}: {last_error}")
+                
+        except httpx.TimeoutException:
+            last_error = "Request timeout"
+            logger.warning(f"Timeout with model {model}")
+            continue
+        except Exception as e:
+            last_error = str(e)
+            logger.error(f"Error with model {model}: {e}")
+            continue
+    
+    return False, last_error or "All models failed"
+
+
 @router.post("/write-email", response_model=EmailWriteResponse)
 async def write_email(request: Request, body: EmailWriteRequest):
     """
     Generate a polished, spam-free email from raw thoughts.
     
-    - **thoughts**: What you want to communicate (required)
+    - **thoughts**: What you want to communicate (required, min 10 chars)
     - **tone**: professional, warm, concise, formal, casual, or persuasive
     - **context**: Optional email you're replying to
     
-    Rate limited to 10 requests per day per IP.
+    Rate limited to 10 requests per day per IP. FREE service.
     """
     
     # Get client IP
@@ -116,103 +199,68 @@ async def write_email(request: Request, body: EmailWriteRequest):
             remaining_requests=0
         )
     
-    # Check if API key is configured
+    # Check API key
     if not settings.GROQ_API_KEY:
-        logger.error("GROQ_API_KEY not configured")
+        logger.error("GROQ_API_KEY not configured in environment")
         return EmailWriteResponse(
             success=False,
-            error="AI service temporarily unavailable. Please try again later.",
+            error="AI service temporarily unavailable.",
             remaining_requests=remaining
         )
     
     # Build the prompt
     context_part = ""
     if body.context and body.context.strip():
-        context_part = f"\n\nContext - I am responding to this email:\n\"{body.context.strip()}\"\n"
+        context_part = f"\n\nI am responding to this email:\n\"\"\"\n{body.context.strip()}\n\"\"\"\n"
     
-    prompt = f"""You are an expert email writer who specializes in writing emails that avoid spam filters. Transform the following raw thoughts into a well-crafted email with a {body.tone} tone.
+    system_prompt = """You are an expert email copywriter specializing in high-deliverability emails. 
+You write emails that:
+- Sound natural and human (not robotic or templated)
+- Avoid spam trigger words (FREE, URGENT, ACT NOW, CLICK HERE, etc.)
+- Use proper formatting with clear paragraphs
+- Match the requested tone perfectly
+- Are concise yet complete
 
-Raw thoughts: "{body.thoughts}"{context_part}
+Output ONLY the email body. No subject line, no explanations."""
 
-IMPORTANT GUIDELINES:
-- Write a complete, professional email body
-- Use a {body.tone} tone throughout
-- Make it clear, engaging, and well-structured
-- Ensure proper email etiquette
-- AVOID spam trigger words like: FREE, URGENT, ACT NOW, CLICK HERE, LIMITED TIME, GUARANTEED, etc.
-- Use natural, conversational language
-- Don't use ALL CAPS for emphasis
-- Don't make unrealistic promises
-- Keep it genuine and trustworthy
+    user_prompt = f"""Transform these thoughts into a polished email with a {body.tone} tone:
 
-Do NOT include a subject line. Respond with ONLY the email body content. No explanations or additional text."""
+"{body.thoughts}"{context_part}
 
-    try:
-        # Call Groq API (FREE tier - OpenAI-compatible format)
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "llama3-70b-8192",  # FREE & high quality (confirmed model name)
-                    "messages": [
-                        {"role": "system", "content": "You are an expert email writer who creates spam-free, professional emails. You write naturally and avoid spam trigger words."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 1000
-                }
-            )
-            
-            if response.status_code != 200:
-                error_detail = response.text[:500] if response.text else "No details"
-                logger.error(f"Groq API error: {response.status_code} - {error_detail}")
-                # Return more specific error for debugging
-                if response.status_code == 401:
-                    return EmailWriteResponse(
-                        success=False,
-                        error="API key invalid. Please check configuration.",
-                        remaining_requests=remaining
-                    )
-                elif response.status_code == 429:
-                    return EmailWriteResponse(
-                        success=False,
-                        error="Rate limit exceeded. Please try again in a minute.",
-                        remaining_requests=remaining
-                    )
-                return EmailWriteResponse(
-                    success=False,
-                    error=f"AI service error ({response.status_code}). Please try again.",
-                    remaining_requests=remaining
-                )
-            
-            data = response.json()
-            generated_email = data["choices"][0]["message"]["content"].strip()
-            
-            # Record successful request
-            _record_request(ip)
-            new_remaining = remaining - 1
-            
-            return EmailWriteResponse(
-                success=True,
-                email=generated_email,
-                remaining_requests=new_remaining
-            )
-            
-    except httpx.TimeoutException:
-        logger.error("Groq API timeout")
+Requirements:
+- Tone: {body.tone}
+- Avoid spam words
+- Natural language only
+- Output the email body only"""
+
+    # Call Groq API
+    success, result = await _call_groq_api(user_prompt, system_prompt)
+    
+    if success:
+        _record_request(ip)
+        return EmailWriteResponse(
+            success=True,
+            email=result,
+            remaining_requests=remaining - 1
+        )
+    else:
+        logger.error(f"AI generation failed: {result}")
         return EmailWriteResponse(
             success=False,
-            error="Request timed out. Please try again.",
+            error=f"Could not generate email: {result}",
             remaining_requests=remaining
         )
-    except Exception as e:
-        logger.error(f"Error generating email: {str(e)}")
-        return EmailWriteResponse(
-            success=False,
-            error="Unable to generate email. Please try again.",
-            remaining_requests=remaining
-        )
+
+
+@router.get("/health")
+async def ai_health():
+    """Check if AI service is configured and basic health."""
+    has_key = bool(settings.GROQ_API_KEY)
+    key_preview = settings.GROQ_API_KEY[:10] + "..." if has_key else "NOT SET"
+    
+    return {
+        "status": "ok" if has_key else "error",
+        "api_key_configured": has_key,
+        "api_key_preview": key_preview,
+        "models_configured": GROQ_MODELS
+    }
