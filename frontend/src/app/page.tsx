@@ -6,20 +6,8 @@ import { toast } from "sonner";
 import { createTest, ApiError } from "@/lib/api";
 import { logger } from "@/lib/logger";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-
-/* ─── LOGO SVG ─── */
-function LogoMark() {
-  return (
-    <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center shrink-0">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <rect x="1" y="4" width="16" height="11" rx="2" stroke="white" strokeWidth="1.5" />
-        <path d="M1 7l8 5 8-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="14" cy="5" r="3" fill="#0ea66e" />
-      </svg>
-    </div>
-  );
-}
 
 function CopyIcon() {
   return (
@@ -87,28 +75,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
-
-      {/* ─── NAV ─── */}
-      <nav className="sticky top-0 z-50 animate-slideDown" style={{ background: "rgba(248,249,251,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--color-border)", height: 60 }}>
-        <div className="max-w-[1100px] mx-auto w-full h-full px-6 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5 no-underline">
-            <LogoMark />
-            <span className="font-mono text-sm font-semibold text-navy" style={{ letterSpacing: "-0.3px" }}>
-              Check<span className="text-brand">Email</span>Delivery
-            </span>
-          </a>
-          <ul className="hidden md:flex items-center gap-1.5 list-none">
-            <li><a href="#how" className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors">How It Works</a></li>
-            <li><a href="#checks" className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors">What We Check</a></li>
-            <li><a href="/about" className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors">About</a></li>
-            <li>
-              <button onClick={() => { if (testId) { handleGoWaiting(); } else { document.getElementById("hero-cta")?.scrollIntoView({ behavior: "smooth" }); } }} className="bg-navy text-white text-[13px] font-semibold px-4 py-1.5 rounded-lg hover:bg-navy-soft transition-all cursor-pointer border-none" style={{ transform: "translateY(0)" }}>
-                Run Free Test →
-              </button>
-            </li>
-          </ul>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* ─── HERO ─── */}
       <section className="relative z-[1] pt-[90px] pb-20 px-6 text-center overflow-hidden">
@@ -167,7 +134,8 @@ export default function HomePage() {
                     to make sure everyone gets a fair share.
                   </p>
                   <p className="text-[13px] text-muted mb-3" style={{ lineHeight: 1.6 }}>
-                    Your tests reset in 24 hours. Come back tomorrow for a fresh set!
+                    Your tests reset daily at <strong className="text-navy">00:00 UTC</strong>.
+                    Come back after reset for a fresh set.
                   </p>
                   <a
                     href="/contact"
@@ -217,7 +185,7 @@ export default function HomePage() {
         </div>
 
         <p className="text-xs text-muted-light text-center animate-fadeUp delay-350">
-          🔒 Deleted automatically after 1 hour · We never read your content · 5 free tests per day
+          🔒 Deleted automatically after 1 hour · We never read your content · 5 free tests/day, reset 00:00 UTC
         </p>
 
         {/* ─── "I've Sent It" CTA — appears after copy ─── */}
@@ -480,7 +448,7 @@ export default function HomePage() {
               {errorMsg === "RATE_LIMIT" && !loading && (
                 <div className="rounded-[14px] p-4 mb-3" style={{ background: "rgba(14,166,110,0.06)", border: "1.5px solid rgba(14,166,110,0.2)" }}>
                   <p className="text-[13px] text-muted text-center mb-1.5" style={{ lineHeight: 1.5 }}>
-                    🌱 Today&apos;s 5 free tests are used up — resets in 24h.
+                    🌱 Today&apos;s 5 free tests are used up — resets at 00:00 UTC.
                   </p>
                   <p className="text-center">
                     <a href="/contact" className="text-[12px] font-semibold text-brand hover:underline">Need more? Share feedback →</a>
@@ -509,7 +477,7 @@ export default function HomePage() {
               )}
 
               <p className="text-xs text-muted-light text-center">
-                🔒 Auto-deleted in 1 hour · Works with Gmail, Outlook, any provider · 5 free tests per day
+                🔒 Auto-deleted in 1 hour · Works with Gmail, Outlook, any provider · 5 free tests/day, reset 00:00 UTC
               </p>
             </div>
           </div>

@@ -70,7 +70,7 @@ export default function SiteHeader() {
           </li>
           <li>
             <Link
-              href="/"
+              href="/#hero-cta"
               className="bg-navy text-white text-[13px] font-semibold px-4 py-1.5 rounded-lg hover:bg-navy-soft transition-all cursor-pointer border-none no-underline"
             >
               Run Free Test →

@@ -37,7 +37,7 @@ async def create_test(request: Request):
     if not check_rate_limit(client_ip):
         raise HTTPException(
             status_code=429,
-            detail="You've reached the limit of 5 tests per day. Come back tomorrow!",
+            detail="You've reached the limit of 5 tests for today. Resets at 00:00 UTC.",
         )
 
     # Generate test session

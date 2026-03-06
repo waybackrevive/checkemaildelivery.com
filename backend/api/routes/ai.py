@@ -7,20 +7,22 @@ Production-ready with model fallback and proper error handling.
 
 import logging
 from typing import Literal
-from datetime import datetime
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 import httpx
 
 from config import settings
+from storage.redis_client import (
+    check_ai_rate_limit,
+    get_rate_limit_remaining,
+    get_rate_limit_reset_utc_iso,
+    increment_ai_rate_limit,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai", tags=["AI Email Writer"])
-
-# Simple in-memory rate limiting (for production, use Redis)
-_rate_limits: dict[str, list[datetime]] = {}
 
 # Groq models to try in order (all FREE tier)
 GROQ_MODELS = [
@@ -58,42 +60,7 @@ class EmailWriteResponse(BaseModel):
     email: str | None = None
     error: str | None = None
     remaining_requests: int = 0
-
-
-def _check_rate_limit(ip: str) -> tuple[bool, int]:
-    """Check if IP has exceeded daily rate limit."""
-    now = datetime.now()
-    today_key = now.strftime("%Y-%m-%d")
-    rate_key = f"{ip}:{today_key}"
-    
-    if rate_key not in _rate_limits:
-        _rate_limits[rate_key] = []
-    
-    # Remove entries older than 24h
-    _rate_limits[rate_key] = [
-        t for t in _rate_limits[rate_key]
-        if (now - t).total_seconds() < 86400
-    ]
-    
-    current_count = len(_rate_limits[rate_key])
-    remaining = max(0, settings.AI_MAX_REQUESTS_PER_DAY - current_count)
-    
-    if current_count >= settings.AI_MAX_REQUESTS_PER_DAY:
-        return False, 0
-    
-    return True, remaining
-
-
-def _record_request(ip: str):
-    """Record a request for rate limiting."""
-    now = datetime.now()
-    today_key = now.strftime("%Y-%m-%d")
-    rate_key = f"{ip}:{today_key}"
-    
-    if rate_key not in _rate_limits:
-        _rate_limits[rate_key] = []
-    
-    _rate_limits[rate_key].append(now)
+    reset_at_utc: str | None = None
 
 
 async def _call_groq_api(prompt: str, system_prompt: str) -> tuple[bool, str]:
@@ -190,13 +157,14 @@ async def write_email(request: Request, body: EmailWriteRequest):
     if forwarded:
         ip = forwarded.split(",")[0].strip()
     
-    # Check rate limit
-    allowed, remaining = _check_rate_limit(ip)
-    if not allowed:
+    # Check rate limit (UTC day boundary)
+    remaining = get_rate_limit_remaining(ip, settings.AI_MAX_REQUESTS_PER_DAY, bucket="ai")
+    if not check_ai_rate_limit(ip):
         return EmailWriteResponse(
             success=False,
-            error="Daily limit reached (10 emails/day). Try again tomorrow!",
-            remaining_requests=0
+            error="Daily limit reached (10 emails/day). Resets at 00:00 UTC.",
+            remaining_requests=0,
+            reset_at_utc=get_rate_limit_reset_utc_iso(),
         )
     
     # Check API key
@@ -205,7 +173,8 @@ async def write_email(request: Request, body: EmailWriteRequest):
         return EmailWriteResponse(
             success=False,
             error="AI service temporarily unavailable.",
-            remaining_requests=remaining
+            remaining_requests=remaining,
+            reset_at_utc=get_rate_limit_reset_utc_iso(),
         )
     
     # Build the prompt
@@ -249,18 +218,20 @@ MANDATORY:
     success, result = await _call_groq_api(user_prompt, system_prompt)
     
     if success:
-        _record_request(ip)
+        increment_ai_rate_limit(ip)
         return EmailWriteResponse(
             success=True,
             email=result,
-            remaining_requests=remaining - 1
+            remaining_requests=max(0, remaining - 1),
+            reset_at_utc=get_rate_limit_reset_utc_iso(),
         )
     else:
         logger.error(f"AI generation failed: {result}")
         return EmailWriteResponse(
             success=False,
             error=f"Could not generate email: {result}",
-            remaining_requests=remaining
+            remaining_requests=remaining,
+            reset_at_utc=get_rate_limit_reset_utc_iso(),
         )
 
 

@@ -301,17 +301,18 @@ export default function SPFRecordGuidePage() {
           <div
             className="rounded-xl p-6 text-center"
             style={{
-              background: "linear-gradient(135deg, rgba(14,166,110,0.1), rgba(17,34,64,0.8))",
-              border: "1px solid rgba(14,166,110,0.2)",
+              background: "linear-gradient(145deg, rgba(14,166,110,0.08), rgba(14,166,110,0.02))",
+              border: "1px solid rgba(14,166,110,0.28)",
+              boxShadow: "0 8px 24px rgba(12,26,46,0.06)",
             }}
           >
             <h3 className="font-display text-navy text-xl mb-2">Check Your SPF</h3>
-            <p className="text-muted text-[13px] mb-4">
+            <p className="text-navy/80 text-[13px] leading-relaxed mb-4">
               Verify your SPF record is correct.
             </p>
             <Link
               href="/"
-              className="block bg-brand text-navy text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand-dark transition-colors"
+              className="block bg-brand text-white text-[13px] font-semibold py-3 px-4 rounded-lg hover:bg-brand/90 transition-colors"
             >
               Run Free Test →
             </Link>
@@ -345,3 +346,5 @@ export default function SPFRecordGuidePage() {
     </div>
   );
 }
+
+

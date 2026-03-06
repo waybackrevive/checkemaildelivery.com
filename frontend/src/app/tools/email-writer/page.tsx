@@ -70,6 +70,7 @@ export default function EmailWriterPage() {
   const [spamWarnings, setSpamWarnings] = useState<{ word: string; severity: "high" | "medium" }[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null);
+  const [resetAtUtc, setResetAtUtc] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Detect spam words whenever generated email changes
@@ -113,8 +114,17 @@ export default function EmailWriterPage() {
         if (data.remaining_requests !== undefined) {
           setRemainingRequests(data.remaining_requests);
         }
+        if (data.reset_at_utc) {
+          setResetAtUtc(data.reset_at_utc);
+        }
       } else {
         setErrorMsg(data.error || "Could not generate email. Please try again.");
+        if (data.remaining_requests !== undefined) {
+          setRemainingRequests(data.remaining_requests);
+        }
+        if (data.reset_at_utc) {
+          setResetAtUtc(data.reset_at_utc);
+        }
         setGeneratedEmail("");
       }
     } catch (error) {
@@ -313,10 +323,14 @@ export default function EmailWriterPage() {
             
             {/* Remaining requests */}
             {remainingRequests !== null && (
-              <p className="text-center text-xs text-muted">
+              <p className="text-center text-xs text-muted leading-relaxed">
                 {remainingRequests > 0 
                   ? `✨ ${remainingRequests} free generations remaining today`
-                  : "🌙 Daily limit reached. Come back tomorrow!"}
+                  : "🌙 Daily limit reached for today."}
+                <br />
+                {resetAtUtc
+                  ? `Resets at ${new Date(resetAtUtc).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", hour12: false })} UTC`
+                  : "Resets daily at 00:00 UTC"}
               </p>
             )}
           </div>
