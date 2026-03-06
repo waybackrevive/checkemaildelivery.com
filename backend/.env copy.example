@@ -19,3 +19,7 @@ SPAMASSASSIN_PORT=783
 
 # Frontend URL (for CORS — change to your production URL in prod)
 FRONTEND_URL=http://localhost:3000
+
+# AI Email Writer — Groq API key (FREE)
+# Get your free key at: https://console.groq.com/keys
+GROQ_API_KEY=gsk_your_groq_api_key_here

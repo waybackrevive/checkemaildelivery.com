@@ -52,5 +52,14 @@ class Settings:
     # Rate limiting
     RATE_LIMIT_WINDOW_SECONDS: int = 86400  # 24 hours
 
+    # AI Email Writer — Groq API key (FREE tier available)
+    # Get your free API key at: https://console.groq.com/keys
+    GROQ_API_KEY: str = field(
+        default_factory=lambda: os.getenv("GROQ_API_KEY", "")
+    )
+    
+    # AI rate limits per IP
+    AI_MAX_REQUESTS_PER_DAY: int = 10
+
 
 settings = Settings()

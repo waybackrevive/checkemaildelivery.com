@@ -5,6 +5,9 @@ import Link from "next/link";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 
+// API URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.checkemaildelivery.com";
+
 // Spam trigger words database - categorized by severity
 const SPAM_WORDS = {
   high: [
@@ -31,14 +34,12 @@ function detectSpamWords(text: string): { word: string; severity: "high" | "medi
   const found: { word: string; severity: "high" | "medium" }[] = [];
   const upperText = text.toUpperCase();
   
-  // Check high severity words
   for (const word of SPAM_WORDS.high) {
     if (upperText.includes(word.toUpperCase())) {
       found.push({ word, severity: "high" });
     }
   }
   
-  // Check medium severity words
   for (const word of SPAM_WORDS.medium) {
     if (upperText.includes(word.toUpperCase())) {
       found.push({ word, severity: "medium" });
@@ -58,16 +59,6 @@ const TONES = [
   { value: "persuasive", label: "Persuasive", description: "Compelling and convincing", icon: "🎯" },
 ];
 
-declare global {
-  interface Window {
-    puter: {
-      ai: {
-        chat: (prompt: string, options?: { model?: string; stream?: boolean }) => Promise<string>;
-      };
-    };
-  }
-}
-
 export default function EmailWriterPage() {
   const [rawThoughts, setRawThoughts] = useState("");
   const [tone, setTone] = useState("professional");
@@ -77,46 +68,25 @@ export default function EmailWriterPage() {
   const [copied, setCopied] = useState(false);
   const [showContext, setShowContext] = useState(false);
   const [spamWarnings, setSpamWarnings] = useState<{ word: string; severity: "high" | "medium" }[]>([]);
-  const [puterReady, setPuterReady] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [remainingRequests, setRemainingRequests] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Load Puter.js script
-  useEffect(() => {
-    if (typeof window !== "undefined" && !document.getElementById("puter-js")) {
-      const script = document.createElement("script");
-      script.id = "puter-js";
-      script.src = "https://js.puter.com/v2/";
-      script.async = true;
-      script.onload = () => {
-        // Give it a moment to initialize
-        setTimeout(() => {
-          if (window.puter && window.puter.ai) {
-            setPuterReady(true);
-          }
-        }, 500);
-      };
-      script.onerror = () => {
-        setErrorMsg("Failed to load AI service. Please refresh the page.");
-      };
-      document.head.appendChild(script);
-    } else if (typeof window !== "undefined" && window.puter && window.puter.ai) {
-      setPuterReady(true);
-    }
-  }, []);
 
   // Detect spam words whenever generated email changes
   useEffect(() => {
-    if (generatedEmail && !generatedEmail.startsWith("Sorry,") && !generatedEmail.startsWith("Error:")) {
+    if (generatedEmail && !errorMsg) {
       const warnings = detectSpamWords(generatedEmail);
       setSpamWarnings(warnings);
     } else {
       setSpamWarnings([]);
     }
-  }, [generatedEmail]);
+  }, [generatedEmail, errorMsg]);
 
   const generateEmail = async () => {
-    if (!rawThoughts.trim()) return;
+    if (!rawThoughts.trim() || rawThoughts.trim().length < 10) {
+      setErrorMsg("Please write at least 10 characters to describe your email.");
+      return;
+    }
 
     setIsLoading(true);
     setGeneratedEmail("");
@@ -124,57 +94,32 @@ export default function EmailWriterPage() {
     setErrorMsg("");
 
     try {
-      // Check if Puter is available
-      if (!window.puter || !window.puter.ai) {
-        throw new Error("AI service not loaded. Please refresh the page.");
-      }
-
-      const contextPart = contextEmail.trim()
-        ? `\n\nContext - I am responding to this email:\n"${contextEmail}"\n\n`
-        : "";
-
-      const prompt = `You are an expert email writer who specializes in writing emails that avoid spam filters. Transform the following raw thoughts into a well-crafted email with a ${tone} tone.
-
-Raw thoughts: "${rawThoughts}"${contextPart}
-
-IMPORTANT GUIDELINES:
-- Write a complete, professional email body
-- Use a ${tone} tone throughout
-- Make it clear, engaging, and well-structured
-- Ensure proper email etiquette
-- AVOID spam trigger words like: FREE, URGENT, ACT NOW, CLICK HERE, LIMITED TIME, GUARANTEED, etc.
-- Use natural, conversational language
-- Don't use ALL CAPS for emphasis
-- Don't make unrealistic promises
-- Keep it genuine and trustworthy
-
-Do NOT include a subject line. Respond with ONLY the email body content.`;
-
-      // Use correct model name from Puter docs
-      const response = await window.puter.ai.chat(prompt, {
-        model: "claude-sonnet-4-0",
+      const response = await fetch(`${API_URL}/ai/write-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          thoughts: rawThoughts.trim(),
+          tone: tone,
+          context: contextEmail.trim() || null,
+        }),
       });
 
-      if (typeof response === "string") {
-        setGeneratedEmail(response.trim());
-      } else if (response && typeof response === "object") {
-        // Handle if response is an object with text property
-        const text = (response as { text?: string }).text || JSON.stringify(response);
-        setGeneratedEmail(text.trim());
+      const data = await response.json();
+
+      if (data.success && data.email) {
+        setGeneratedEmail(data.email);
+        if (data.remaining_requests !== undefined) {
+          setRemainingRequests(data.remaining_requests);
+        }
       } else {
-        setGeneratedEmail(String(response).trim());
+        setErrorMsg(data.error || "Could not generate email. Please try again.");
+        setGeneratedEmail("");
       }
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Error generating email:", error);
-      const errMessage = error instanceof Error ? error.message : "Unknown error";
-      
-      if (errMessage.includes("auth") || errMessage.includes("login") || errMessage.includes("sign")) {
-        setErrorMsg("Please sign in to Puter to use this feature. A popup may have opened - please complete sign-in and try again.");
-      } else if (errMessage.includes("limit") || errMessage.includes("quota") || errMessage.includes("rate")) {
-        setErrorMsg("Daily limit reached. Please try again tomorrow or sign in to Puter for more credits.");
-      } else {
-        setErrorMsg("Could not generate email. Please try again.");
-      }
+      setErrorMsg("Network error. Please check your connection and try again.");
       setGeneratedEmail("");
     } finally {
       setIsLoading(false);
@@ -231,7 +176,7 @@ Do NOT include a subject line. Respond with ONLY the email body content.`;
             </span>
             <span className="inline-flex items-center gap-1.5 bg-navy/10 text-navy text-sm font-medium px-3 py-1.5 rounded-full">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-              Free & Unlimited
+              Free · No Signup
             </span>
           </div>
         </div>
@@ -363,16 +308,15 @@ Do NOT include a subject line. Respond with ONLY the email body content.`;
             {errorMsg && (
               <div className="bg-warn/10 border border-warn/30 rounded-xl p-4 text-center">
                 <p className="text-navy text-sm">{errorMsg}</p>
-                <p className="text-muted text-xs mt-2">
-                  💡 This uses a free AI service. If issues persist, try refreshing the page.
-                </p>
               </div>
             )}
             
-            {!puterReady && !errorMsg && (
-              <p className="text-center text-sm text-muted">
-                <span className="inline-block w-3 h-3 border-2 border-brand/30 border-t-brand rounded-full animate-spin mr-2"></span>
-                Loading AI...
+            {/* Remaining requests */}
+            {remainingRequests !== null && (
+              <p className="text-center text-xs text-muted">
+                {remainingRequests > 0 
+                  ? `✨ ${remainingRequests} free generations remaining today`
+                  : "🌙 Daily limit reached. Come back tomorrow!"}
               </p>
             )}
           </div>
@@ -423,16 +367,6 @@ Do NOT include a subject line. Respond with ONLY the email body content.`;
                   <pre className="whitespace-pre-wrap font-sans text-navy text-[15px] leading-relaxed">
                     {generatedEmail}
                   </pre>
-                </div>
-              ) : errorMsg ? (
-                <div className="flex flex-col items-center justify-center h-64 text-muted">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-40 mb-4 text-warn">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  <p className="text-lg">Could not generate email</p>
-                  <p className="text-sm mt-1 text-center max-w-[280px]">Please check the error message below and try again</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-muted">

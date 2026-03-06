@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from api.routes import test, webhook, report
+from api.routes import test, webhook, report, ai
 
 # Configure logging
 logging.basicConfig(
@@ -51,6 +51,7 @@ app.add_middleware(
 app.include_router(test.router)
 app.include_router(webhook.router)
 app.include_router(report.router)
+app.include_router(ai.router)
 
 
 @app.get("/")
