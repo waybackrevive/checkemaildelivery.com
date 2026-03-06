@@ -14,9 +14,10 @@ function LogoMark() {
 
 const footerColumns = [
   {
-    title: "Tool",
+    title: "Tools",
     links: [
       { label: "Run Free Test", href: "/" },
+      { label: "AI Email Writer", href: "/tools/email-writer" },
       { label: "How It Works", href: "/#how" },
       { label: "What We Check", href: "/#checks" },
       { label: "Sample Report", href: "/sample-report" },

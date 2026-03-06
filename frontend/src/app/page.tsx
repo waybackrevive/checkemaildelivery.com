@@ -516,6 +516,36 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ─── AI EMAIL WRITER CTA ─── */}
+      <section className="py-16 px-6 reveal" style={{ background: "linear-gradient(135deg, rgba(14,166,110,0.05) 0%, rgba(12,26,46,0.03) 100%)" }}>
+        <div className="max-w-[900px] mx-auto">
+          <div className="bg-white border border-border rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8" style={{ boxShadow: "0 4px 40px rgba(12,26,46,0.06)" }}>
+            <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand/70 rounded-2xl flex items-center justify-center shrink-0">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h3 className="font-display text-navy text-2xl mb-2">Need Help Writing Your Email?</h3>
+              <p className="text-muted text-[15px] mb-0">
+                Transform your rough ideas into polished, <span className="text-brand font-semibold">spam-free</span> professional emails with our free AI-powered writing assistant.
+              </p>
+            </div>
+            <a
+              href="/tools/email-writer"
+              className="shrink-0 bg-navy text-white font-semibold px-6 py-3 rounded-xl hover:bg-navy/90 transition-all flex items-center gap-2"
+            >
+              ✨ Try AI Email Writer
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14" />
+                <path d="M12 5l7 7-7 7" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ─── FOOTER ─── */}
       <SiteFooter />
     </div>

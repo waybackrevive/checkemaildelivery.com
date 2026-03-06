@@ -54,18 +54,18 @@ export default function SiteHeader() {
           </li>
           <li>
             <Link
-              href="/blog"
-              className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
+              href="/tools/email-writer"
+              className="text-[13px] font-medium text-brand no-underline px-3 py-1.5 rounded-md hover:text-brand/80 hover:bg-brand/5 transition-colors"
             >
-              Blog
+              ✨ AI Email Writer
             </Link>
           </li>
           <li>
             <Link
-              href="/about"
+              href="/blog"
               className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
             >
-              About
+              Blog
             </Link>
           </li>
           <li>
