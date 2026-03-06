@@ -23,12 +23,12 @@ const footerColumns = [
     ],
   },
   {
-    title: "Learn",
+    title: "Blog",
     links: [
-      { label: "How to Fix DKIM", href: "/learn/fix-dkim" },
-      { label: "What is DMARC?", href: "/learn/what-is-dmarc" },
-      { label: "Email Spam Triggers", href: "/learn/spam-triggers" },
-      { label: "Blacklist Removal Guide", href: "/learn/blacklist-removal" },
+      { label: "Why Emails Go to Spam", href: "/blog/why-emails-go-to-spam" },
+      { label: "How to Fix DKIM", href: "/blog/how-to-fix-dkim" },
+      { label: "What is DMARC?", href: "/blog/what-is-dmarc" },
+      { label: "Blacklist Removal Guide", href: "/blog/email-blacklist-removal" },
     ],
   },
   {

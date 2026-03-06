@@ -54,6 +54,14 @@ export default function SiteHeader() {
           </li>
           <li>
             <Link
+              href="/blog"
+              className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
+            >
+              Blog
+            </Link>
+          </li>
+          <li>
+            <Link
               href="/about"
               className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
             >
