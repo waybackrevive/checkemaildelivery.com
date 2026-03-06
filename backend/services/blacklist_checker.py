@@ -1,22 +1,41 @@
-"""
-Blacklist Checker — queries DNS-based Real-time Blackhole Lists (RBLs).
+﻿"""
+Blacklist Checker — v2 FIXED
+============================
 
-Uses dnspython for async DNS lookups.
-Checks both IP-based and domain-based blacklists.
+CRITICAL FIXES:
+1. Skip major email provider domains (gmail.com, outlook.com, etc.)
+2. Properly interpret Spamhaus response codes (127.255.x.x = error, not listed)
+3. Add timeout handling
+4. Only flag as listed if we get a valid listing response
 
-Also uses python-whois for domain age lookup.
+Why gmail.com was showing as "listed":
+- Spamhaus blocks queries from cloud providers (Railway, AWS, etc.)
+- When blocked, it returns 127.255.255.x (error code)
+- Old code interpreted ANY response as "listed"
 """
 
 import json
+import logging
 import os
-from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+import socket
+from datetime import datetime
+from typing import List, Optional
 
 import dns.resolver
-import dns.reversename
 
 from models.schemas import BlacklistEntry, CheckStatus, ReputationResult
 
+logger = logging.getLogger(__name__)
+
+# Major email providers - NEVER blacklisted, skip checking
+TRUSTED_DOMAINS = {
+    "gmail.com", "googlemail.com",
+    "outlook.com", "hotmail.com", "live.com", "msn.com",
+    "yahoo.com", "yahoo.co.uk", "ymail.com",
+    "icloud.com", "me.com", "mac.com",
+    "aol.com", "proton.me", "protonmail.com",
+    "zoho.com", "fastmail.com", "tutanota.com",
+}
 
 # Load blacklists config
 _BLACKLISTS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "blacklists.json")
@@ -39,16 +58,45 @@ def _load_blacklists() -> dict:
 
 
 def _reverse_ip(ip: str) -> str:
-    """Reverse an IP address for DNSBL lookup. 1.2.3.4 → 4.3.2.1"""
+    """Reverse an IP address for DNSBL lookup. 1.2.3.4 -> 4.3.2.1"""
     parts = ip.split(".")
     return ".".join(reversed(parts))
+
+
+def _is_valid_listing_response(ip_response: str) -> bool:
+    """
+    Check if a DNS response indicates an actual blacklist listing.
+    
+    Spamhaus and other RBLs use specific response codes:
+    - 127.0.0.2 to 127.0.0.11 = Actually listed (various categories)
+    - 127.255.255.252-255 = Error/rate limited/query blocked
+    
+    We ONLY consider 127.0.0.x (where x < 128) as actual listings.
+    """
+    try:
+        parts = ip_response.split(".")
+        if len(parts) != 4:
+            return False
+        
+        # Must be 127.0.0.x for valid listing
+        if parts[0] == "127" and parts[1] == "0" and parts[2] == "0":
+            last_octet = int(parts[3])
+            # 2-127 = valid listing codes
+            # 255 = error/rate limited
+            return 2 <= last_octet <= 127
+        
+        # 127.255.x.x = error codes, NOT a listing
+        if parts[0] == "127" and parts[1] == "255":
+            return False
+            
+        return False
+    except (ValueError, IndexError):
+        return False
 
 
 def check_ip_blacklists(ip: str) -> List[BlacklistEntry]:
     """
     Check if an IP is listed on any DNS-based blacklist.
-    Queries each RBL by doing a DNS A lookup for: reversed_ip.rbl.domain
-    If an A record exists → listed. If NXDOMAIN → clean.
     """
     if not ip:
         return []
@@ -57,16 +105,30 @@ def check_ip_blacklists(ip: str) -> List[BlacklistEntry]:
     reversed_ip = _reverse_ip(ip)
     results: List[BlacklistEntry] = []
 
+    # Configure resolver with short timeout
+    resolver = dns.resolver.Resolver()
+    resolver.timeout = 3
+    resolver.lifetime = 5
+
     for rbl in db.get("ip_blacklists", []):
         query = f"{reversed_ip}.{rbl['dns']}"
         listed = False
+        
         try:
-            dns.resolver.resolve(query, "A")
-            listed = True  # A record found → IP is blacklisted
+            answers = resolver.resolve(query, "A")
+            # Check if ANY response is a valid listing (not an error code)
+            for rdata in answers:
+                if _is_valid_listing_response(str(rdata)):
+                    listed = True
+                    break
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
             listed = False
-        except Exception:
-            listed = False  # DNS error — assume not listed
+        except dns.resolver.Timeout:
+            logger.debug(f"Blacklist query timeout: {rbl['name']}")
+            listed = False
+        except Exception as e:
+            logger.debug(f"Blacklist query error for {rbl['name']}: {e}")
+            listed = False
 
         results.append(BlacklistEntry(
             list_name=rbl["name"],
@@ -78,24 +140,48 @@ def check_ip_blacklists(ip: str) -> List[BlacklistEntry]:
 
 def check_domain_blacklists(domain: str) -> List[BlacklistEntry]:
     """
-    Check if a domain is listed on any domain-based blacklist (URIBL/SURBL).
-    Queries: domain.dbl.server
+    Check if a domain is listed on any domain-based blacklist.
     """
     if not domain:
         return []
+    
+    # Skip trusted email provider domains - they're NEVER blacklisted
+    domain_lower = domain.lower()
+    if domain_lower in TRUSTED_DOMAINS:
+        logger.info(f"Skipping blacklist check for trusted domain: {domain}")
+        # Return all clean results
+        db = _load_blacklists()
+        return [
+            BlacklistEntry(list_name=dbl["name"], listed=False)
+            for dbl in db.get("domain_blacklists", [])
+        ]
 
     db = _load_blacklists()
     results: List[BlacklistEntry] = []
 
+    # Configure resolver with short timeout
+    resolver = dns.resolver.Resolver()
+    resolver.timeout = 3
+    resolver.lifetime = 5
+
     for dbl in db.get("domain_blacklists", []):
         query = f"{domain}.{dbl['dns']}"
         listed = False
+        
         try:
-            dns.resolver.resolve(query, "A")
-            listed = True
+            answers = resolver.resolve(query, "A")
+            # Check if ANY response is a valid listing
+            for rdata in answers:
+                if _is_valid_listing_response(str(rdata)):
+                    listed = True
+                    break
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
             listed = False
-        except Exception:
+        except dns.resolver.Timeout:
+            logger.debug(f"Domain blacklist query timeout: {dbl['name']}")
+            listed = False
+        except Exception as e:
+            logger.debug(f"Domain blacklist query error for {dbl['name']}: {e}")
             listed = False
 
         results.append(BlacklistEntry(
@@ -109,8 +195,11 @@ def check_domain_blacklists(domain: str) -> List[BlacklistEntry]:
 def get_domain_age(domain: str) -> Optional[int]:
     """
     Get domain age in days using python-whois.
-    Returns None if WHOIS lookup fails (common for some TLDs).
     """
+    # Skip WHOIS for trusted providers - they're established
+    if domain.lower() in TRUSTED_DOMAINS:
+        return 9999  # Ancient/established
+        
     try:
         import whois
         w = whois.whois(domain)
@@ -131,45 +220,47 @@ def get_domain_age(domain: str) -> Optional[int]:
 def check_reputation(sending_ip: str, from_domain: str) -> ReputationResult:
     """
     Main entry point: run all reputation checks.
-    Returns a ReputationResult with blacklist status + domain age.
     """
+    logger.info(f"Checking reputation for IP={sending_ip or 'unknown'}, domain={from_domain}")
+    
     # Run blacklist checks
     ip_results = check_ip_blacklists(sending_ip)
     domain_results = check_domain_blacklists(from_domain)
 
     ip_listed_count = sum(1 for r in ip_results if r.listed)
     domain_listed_count = sum(1 for r in domain_results if r.listed)
+    
+    logger.info(f"Blacklist results: IP listed on {ip_listed_count}, domain listed on {domain_listed_count}")
 
     # Domain age
     domain_age = get_domain_age(from_domain)
 
     # Domain age status
-    if domain_age is None:
+    if from_domain.lower() in TRUSTED_DOMAINS:
+        age_status = CheckStatus.PASS
+        age_description = "Major email provider - established reputation."
+    elif domain_age is None:
         age_status = CheckStatus.WARNING
         age_description = "Could not determine domain age."
     elif domain_age < 30:
         age_status = CheckStatus.FAIL
-        age_description = f"Domain is only {domain_age} days old. Very new domains are treated with high suspicion by mail servers."
+        age_description = f"Domain is only {domain_age} days old. Very new domains are treated with high suspicion."
     elif domain_age < 90:
         age_status = CheckStatus.WARNING
         age_description = f"Domain is {domain_age} days old. Newer domains may face some deliverability challenges."
     else:
         age_status = CheckStatus.PASS
-        age_description = f"Domain is {domain_age} days old. Established domain — good reputation signal."
+        age_description = f"Domain is {domain_age} days old. Established domain."
 
     # Calculate reputation score (out of 100)
     score = 100.0
-
-    # Blacklist penalties
     score -= ip_listed_count * 20
     score -= domain_listed_count * 20
 
-    # Domain age penalties
-    if domain_age is not None:
-        if domain_age < 30:
-            score -= 20
-        elif domain_age < 90:
-            score -= 10
+    if domain_age is not None and domain_age < 30:
+        score -= 20
+    elif domain_age is not None and domain_age < 90:
+        score -= 10
 
     score = max(0, score)
 
