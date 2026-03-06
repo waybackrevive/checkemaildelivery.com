@@ -41,8 +41,9 @@ export default {
 
       console.log(`Raw email size: ${rawEmail.length} bytes, posting to ${env.BACKEND_URL}`);
 
-      // Forward to FastAPI backend
-      const url = `${env.BACKEND_URL}/api/webhook/cloudflare`;
+      // Forward to FastAPI backend (strip trailing slash from BACKEND_URL to avoid double-slash)
+      const baseUrl = env.BACKEND_URL.replace(/\/+$/, "");
+      const url = `${baseUrl}/api/webhook/cloudflare`;
       const response = await fetch(url, {
         method: "POST",
         headers: {
