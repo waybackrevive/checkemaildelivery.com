@@ -31,23 +31,24 @@ export default {
 
       try {
         const body = await request.json();
+        const toEmail = body?.to_email || env.CONTACT_EMAIL || "";
         const subject = body?.subject || "Contact Form Submission";
         const text = body?.text || "";
         const html = body?.html || "";
         const fromName = body?.from_name || "CheckEmailDelivery Contact";
         const replyTo = body?.reply_to || "";
 
-        if (!env.CONTACT_EMAIL) {
-          return new Response(JSON.stringify({ ok: false, error: "Missing CONTACT_EMAIL" }), {
+        if (!toEmail) {
+          return new Response(JSON.stringify({ ok: false, error: "Missing recipient (to_email or CONTACT_EMAIL)" }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
           });
         }
 
         const mailchannelsPayload = {
-          personalizations: [{ to: [{ email: env.CONTACT_EMAIL }] }],
+          personalizations: [{ to: [{ email: toEmail }] }],
           from: {
-            email: env.CONTACT_FROM_EMAIL || env.CONTACT_EMAIL,
+            email: env.CONTACT_FROM_EMAIL || "noreply@checkemaildelivery.com",
             name: fromName,
           },
           subject,

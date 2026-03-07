@@ -84,6 +84,7 @@ Submitted: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
 """
 
     return {
+        "to_email": settings.CONTACT_EMAIL,
         "from_name": "CheckEmailDelivery Contact",
         "reply_to": email,
         "subject": subject,
