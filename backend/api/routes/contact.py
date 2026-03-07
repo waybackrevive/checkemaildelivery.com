@@ -13,7 +13,7 @@ from pydantic import BaseModel, EmailStr
 
 from config import settings
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["contact"])
 logger = logging.getLogger(__name__)
 
 
