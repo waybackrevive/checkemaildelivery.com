@@ -3,12 +3,12 @@ Contact Form API — Handle user inquiries
 """
 
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+import html
 
-from fastapi import APIRouter, Request, HTTPException
+import httpx
+
+from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
 
 from config import settings
@@ -42,74 +42,35 @@ def get_contact_type_emoji(contact_type: str) -> str:
     return emoji_map.get(contact_type, "✉️")
 
 
-def send_contact_email(name: str, email: str, contact_type: str, message: str) -> None:
+def _build_contact_payload(name: str, email: str, contact_type: str, message: str) -> dict:
     """
-    Send contact form submission via SMTP.
-    
-    Raises:
-        Exception: If email sending fails
+    Build sanitized contact payload for Cloudflare Worker relay.
     """
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        raise Exception(
-            "SMTP not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables."
-        )
-
+    safe_name = html.escape(name)
+    safe_email = html.escape(email)
+    safe_message = html.escape(message).replace("\n", "<br>")
     emoji = get_contact_type_emoji(contact_type)
     subject = f"{emoji} Contact Form: {contact_type.replace('-', ' ').title()} from {name}"
-    
-    # Create email body
+
     html_body = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #0ea66e 0%, #0c8f5e 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }}
-            .content {{ background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }}
-            .field {{ margin-bottom: 20px; }}
-            .label {{ font-weight: 600; color: #0c1a2e; margin-bottom: 5px; }}
-            .value {{ color: #4a5568; }}
-            .message-box {{ background: #f8f9fb; padding: 15px; border-radius: 6px; border-left: 4px solid #0ea66e; }}
-            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #718096; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h2 style="margin: 0;">New Contact Form Submission</h2>
-            </div>
-            <div class="content">
-                <div class="field">
-                    <div class="label">Contact Type:</div>
-                    <div class="value">{emoji} {contact_type.replace("-", " ").title()}</div>
-                </div>
-                <div class="field">
-                    <div class="label">Name:</div>
-                    <div class="value">{name}</div>
-                </div>
-                <div class="field">
-                    <div class="label">Email:</div>
-                    <div class="value"><a href="mailto:{email}">{email}</a></div>
-                </div>
-                <div class="field">
-                    <div class="label">Message:</div>
-                    <div class="message-box">{message.replace(chr(10), '<br>')}</div>
-                </div>
-                <div class="field">
-                    <div class="label">Submitted:</div>
-                    <div class="value">{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC</div>
-                </div>
-            </div>
-            <div class="footer">
-                <p>This email was sent from the CheckEmailDelivery.com contact form</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=\"UTF-8\">
+</head>
+<body style=\"font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;\">
+  <h2 style=\"margin:0 0 12px 0;color:#0c1a2e;\">New Contact Form Submission</h2>
+  <p><strong>Contact Type:</strong> {emoji} {contact_type.replace('-', ' ').title()}</p>
+  <p><strong>Name:</strong> {safe_name}</p>
+  <p><strong>Email:</strong> <a href=\"mailto:{safe_email}\">{safe_email}</a></p>
+  <p><strong>Message:</strong><br>{safe_message}</p>
+  <p><strong>Submitted:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC</p>
+  <hr>
+  <p style=\"font-size:12px;color:#6b7280;\">Sent from CheckEmailDelivery.com contact form</p>
+</body>
+</html>
+"""
+
     text_body = f"""
 New Contact Form Submission
 
@@ -121,34 +82,42 @@ Message:
 
 Submitted: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
 """
-    
-    # Create message
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = settings.SMTP_USER
-    msg['To'] = settings.CONTACT_EMAIL
-    msg['Reply-To'] = email  # Allow easy reply to the sender
-    
-    # Attach both plain text and HTML versions
-    part1 = MIMEText(text_body, 'plain')
-    part2 = MIMEText(html_body, 'html')
-    msg.attach(part1)
-    msg.attach(part2)
-    
-    # Send email via SMTP
-    try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
-        logger.info(f"Contact email sent successfully from {email} ({contact_type})")
-    except Exception as e:
-        logger.error(f"Failed to send contact email: {e}")
-        raise
+
+    return {
+        "from_name": "CheckEmailDelivery Contact",
+        "reply_to": email,
+        "subject": subject,
+        "text": text_body,
+        "html": html_body,
+    }
+
+
+async def send_contact_email_via_worker(name: str, email: str, contact_type: str, message: str) -> None:
+    """Relay contact form email through existing Cloudflare Worker (no SMTP)."""
+    if not settings.CLOUDFLARE_WORKER_URL:
+        raise Exception("CLOUDFLARE_WORKER_URL is not configured")
+
+    payload = _build_contact_payload(name, email, contact_type, message)
+    url = settings.CLOUDFLARE_WORKER_URL.rstrip("/") + "/contact/send"
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        response = await client.post(
+            url,
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "X-Worker-Secret": settings.CLOUDFLARE_WORKER_SECRET or "",
+            },
+        )
+
+    if response.status_code >= 400:
+        raise Exception(f"Worker relay failed: {response.status_code} {response.text}")
+
+    logger.info("Contact email relayed via Cloudflare Worker from %s (%s)", email, contact_type)
 
 
 @router.post("/contact", response_model=ContactResponse)
-async def handle_contact_form(request: Request, body: ContactRequest) -> ContactResponse:
+async def handle_contact_form(body: ContactRequest) -> ContactResponse:
     """
     Handle contact form submission.
     
@@ -170,8 +139,8 @@ async def handle_contact_form(request: Request, body: ContactRequest) -> Contact
                 error="Message is too short. Please provide more details."
             )
         
-        # Send email
-        send_contact_email(
+        # Send email through Cloudflare Worker relay
+        await send_contact_email_via_worker(
             name=body.name.strip(),
             email=body.email,
             contact_type=body.contactType,
@@ -188,5 +157,5 @@ async def handle_contact_form(request: Request, body: ContactRequest) -> Contact
         logger.error(f"Contact form error: {e}", exc_info=True)
         return ContactResponse(
             success=False,
-            error="Failed to send message. Please try again or email us directly at contact@checkemaildelivery.com"
+            error="Failed to send message. Please try again or email us directly at connect@checkemaildelivery.com"
         )

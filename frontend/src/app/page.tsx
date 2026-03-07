@@ -138,7 +138,7 @@ export default function HomePage() {
                     Come back after reset for a fresh set.
                   </p>
                   <a
-                    href="/contact"
+                    href="/contact-us"
                     className="inline-flex items-center gap-2 text-[13px] font-semibold text-brand hover:underline"
                   >
                     💬 Share feedback or request more tests
@@ -452,7 +452,7 @@ export default function HomePage() {
                     🌱 Today&apos;s 5 free tests are used up — resets at 00:00 UTC.
                   </p>
                   <p className="text-center">
-                    <a href="/contact" className="text-[12px] font-semibold text-brand hover:underline">Need more? Share feedback →</a>
+                    <a href="/contact-us" className="text-[12px] font-semibold text-brand hover:underline">Need more? Share feedback →</a>
                   </p>
                 </div>
               )}
@@ -502,7 +502,7 @@ export default function HomePage() {
               </p>
             </div>
             <a
-              href="/tools/email-writer"
+              href="/ai-email-writer"
               className="shrink-0 bg-navy text-white font-semibold px-6 py-3 rounded-xl hover:bg-navy/90 transition-all flex items-center gap-2"
             >
               ✨ Try AI Email Writer

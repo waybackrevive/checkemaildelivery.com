@@ -17,7 +17,74 @@
 export default {
   // Handle HTTP requests to the worker URL (health check / browser visits)
   async fetch(request, env, ctx) {
-    return new Response("Email Worker is running. This endpoint only processes inbound emails.", {
+    const url = new URL(request.url);
+
+    // Backend -> Worker relay for contact form notifications (no SMTP on backend)
+    if (request.method === "POST" && url.pathname === "/contact/send") {
+      const providedSecret = request.headers.get("x-worker-secret") || "";
+      if ((env.WORKER_SECRET || "") && providedSecret !== env.WORKER_SECRET) {
+        return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      try {
+        const body = await request.json();
+        const subject = body?.subject || "Contact Form Submission";
+        const text = body?.text || "";
+        const html = body?.html || "";
+        const fromName = body?.from_name || "CheckEmailDelivery Contact";
+        const replyTo = body?.reply_to || "";
+
+        if (!env.CONTACT_EMAIL) {
+          return new Response(JSON.stringify({ ok: false, error: "Missing CONTACT_EMAIL" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const mailchannelsPayload = {
+          personalizations: [{ to: [{ email: env.CONTACT_EMAIL }] }],
+          from: {
+            email: env.CONTACT_FROM_EMAIL || env.CONTACT_EMAIL,
+            name: fromName,
+          },
+          subject,
+          content: [
+            { type: "text/plain", value: text },
+            { type: "text/html", value: html },
+          ],
+          reply_to: replyTo ? { email: replyTo } : undefined,
+        };
+
+        const mcResp = await fetch("https://api.mailchannels.net/tx/v1/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mailchannelsPayload),
+        });
+
+        if (!mcResp.ok) {
+          const err = await mcResp.text();
+          return new Response(JSON.stringify({ ok: false, error: err }), {
+            status: 502,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err?.message || "Bad Request" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    return new Response("Email Worker is running. It handles inbound test emails and /contact/send relay.", {
       status: 200,
       headers: { "Content-Type": "text/plain" },
     });

@@ -153,7 +153,7 @@ export default function TermsPage() {
                   connect@checkemaildelivery.com
                 </a>{" "}
                 or visit our{" "}
-                <a href="/contact" className="text-brand underline">
+                 <a href="/contact-us" className="text-brand underline">
                   Contact page
                 </a>
                 .

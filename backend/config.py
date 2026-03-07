@@ -61,24 +61,12 @@ class Settings:
     # AI rate limits per IP
     AI_MAX_REQUESTS_PER_DAY: int = 10
 
-    # Contact Form — SMTP Configuration
-    # For Gmail: smtp.gmail.com:587 (use App Password, not regular password)
-    # For SendGrid: smtp.sendgrid.net:587
-    # For Mailgun: smtp.mailgun.org:587
-    SMTP_HOST: str = field(
-        default_factory=lambda: os.getenv("SMTP_HOST", "smtp.gmail.com")
-    )
-    SMTP_PORT: int = field(
-        default_factory=lambda: int(os.getenv("SMTP_PORT", "587"))
-    )
-    SMTP_USER: str = field(
-        default_factory=lambda: os.getenv("SMTP_USER", "")
-    )
-    SMTP_PASSWORD: str = field(
-        default_factory=lambda: os.getenv("SMTP_PASSWORD", "")
+    # Contact Form — use existing Cloudflare Worker as outbound relay
+    CLOUDFLARE_WORKER_URL: str = field(
+        default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_URL", "")
     )
     CONTACT_EMAIL: str = field(
-        default_factory=lambda: os.getenv("CONTACT_EMAIL", "contact@checkemaildelivery.com")
+        default_factory=lambda: os.getenv("CONTACT_EMAIL", "connect@checkemaildelivery.com")
     )
 
 

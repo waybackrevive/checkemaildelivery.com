@@ -59,7 +59,7 @@ export default function SiteHeader() {
           </li>
           <li>
             <Link
-              href="/tools/email-writer"
+              href="/ai-email-writer"
               className="text-[13px] font-medium text-brand no-underline px-3 py-1.5 rounded-md hover:text-brand/80 hover:bg-brand/5 transition-colors"
             >
               ✨ AI Email Writer
@@ -75,7 +75,15 @@ export default function SiteHeader() {
           </li>
           <li>
             <Link
-              href="/contact"
+              href="/about-us"
+              className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
+            >
+              About
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/contact-us"
               className="text-[13px] font-medium text-muted no-underline px-3 py-1.5 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
             >
               Contact
@@ -136,7 +144,7 @@ export default function SiteHeader() {
             </li>
             <li>
               <Link
-                href="/tools/email-writer"
+                href="/ai-email-writer"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block text-[14px] font-medium text-brand no-underline px-4 py-3 rounded-md hover:text-brand/80 hover:bg-brand/5 transition-colors"
               >
@@ -154,7 +162,16 @@ export default function SiteHeader() {
             </li>
             <li>
               <Link
-                href="/contact"
+                href="/about-us"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-[14px] font-medium text-muted no-underline px-4 py-3 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
+              >
+                About
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/contact-us"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block text-[14px] font-medium text-muted no-underline px-4 py-3 rounded-md hover:text-navy hover:bg-border-soft transition-colors"
               >

@@ -219,10 +219,10 @@ export default function ContactPage() {
               <p className="text-sm text-muted">
                 Or email us directly at{" "}
                 <a
-                  href="mailto:contact@checkemaildelivery.com"
+                  href="mailto:connect@checkemaildelivery.com"
                   className="text-brand hover:text-brand/80 transition font-medium"
                 >
-                  contact@checkemaildelivery.com
+                  connect@checkemaildelivery.com
                 </a>
               </p>
             </div>
@@ -277,10 +277,10 @@ export default function ContactPage() {
                 <p className="text-muted">
                   Use the form above or send an email to{" "}
                   <a
-                    href="mailto:contact@checkemaildelivery.com?subject=Bug%20Report"
+                    href="mailto:connect@checkemaildelivery.com?subject=Bug%20Report"
                     className="text-brand underline"
                   >
-                    contact@checkemaildelivery.com
+                    connect@checkemaildelivery.com
                   </a>{" "}
                   with a description of what happened. Screenshots help a lot!
                 </p>

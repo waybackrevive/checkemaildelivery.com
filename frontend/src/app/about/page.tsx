@@ -193,7 +193,7 @@ export default function AboutPage() {
               helps us build the tool you actually need.
             </p>
             <Link
-              href="/contact"
+              href="/contact-us"
               className="inline-flex items-center gap-2 bg-brand text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg no-underline hover:opacity-90 transition-all"
             >
               💬 Share Your Feedback

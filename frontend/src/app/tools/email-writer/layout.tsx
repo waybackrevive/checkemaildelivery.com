@@ -13,12 +13,12 @@ export const metadata: Metadata = {
     "email deliverability",
     "free email tool",
   ],
-  alternates: { canonical: "/tools/email-writer" },
+  alternates: { canonical: "/ai-email-writer" },
   openGraph: {
     title: "AI Email Writer - Write Spam-Free Emails",
     description:
       "Transform your thoughts into polished, professional emails with AI. Built-in spam detection.",
-    url: "https://checkemaildelivery.com/tools/email-writer",
+    url: "https://checkemaildelivery.com/ai-email-writer",
     type: "website",
   },
 };

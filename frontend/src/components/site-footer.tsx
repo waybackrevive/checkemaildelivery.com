@@ -17,7 +17,7 @@ const footerColumns = [
     title: "Tools",
     links: [
       { label: "Run Free Test", href: "/" },
-      { label: "AI Email Writer", href: "/tools/email-writer" },
+      { label: "AI Email Writer", href: "/ai-email-writer" },
       { label: "How It Works", href: "/#how" },
       { label: "What We Check", href: "/#checks" },
       { label: "Sample Report", href: "/sample-report" },
@@ -35,10 +35,10 @@ const footerColumns = [
   {
     title: "Legal & Info",
     links: [
-      { label: "About Us", href: "/about" },
+      { label: "About Us", href: "/about-us" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
-      { label: "Contact & Feedback", href: "/contact" },
+      { label: "Contact & Feedback", href: "/contact-us" },
     ],
   },
 ];
