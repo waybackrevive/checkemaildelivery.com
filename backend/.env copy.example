@@ -24,6 +24,7 @@ FRONTEND_URL=http://localhost:3000
 # Get your free key at: https://console.groq.com/keys
 GROQ_API_KEY=gsk_your_groq_api_key_here
 
-# Contact Form destination
-# Contact form is sent directly via MailChannels API from backend code.
+# Contact Form — relay via existing Cloudflare Worker (no SMTP required)
+# Use your Worker public URL, e.g. https://email-worker.checkemaildelivery.workers.dev
+CLOUDFLARE_WORKER_URL=https://your-worker-url.workers.dev
 CONTACT_EMAIL=connect@checkemaildelivery.com

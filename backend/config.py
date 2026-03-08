@@ -27,9 +27,7 @@ class Settings:
         default_factory=lambda: os.getenv("UPSTASH_REDIS_TOKEN", "")
     )
 
-    # Cloudflare Email Worker — no longer needed for contact form relay
-    # Worker now only handles inbound email processing via Email Routing
-    # Contact form emails go directly to MailChannels API
+    # Cloudflare Email Worker — shared secret for webhook verification
     CLOUDFLARE_WORKER_SECRET: str = field(
         default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_SECRET", "")
     )
@@ -63,7 +61,10 @@ class Settings:
     # AI rate limits per IP
     AI_MAX_REQUESTS_PER_DAY: int = 10
 
-    # Contact Form — send directly to MailChannels API (no worker relay)
+    # Contact Form — use existing Cloudflare Worker as outbound relay
+    CLOUDFLARE_WORKER_URL: str = field(
+        default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_URL", "")
+    )
     CONTACT_EMAIL: str = field(
         default_factory=lambda: os.getenv("CONTACT_EMAIL", "connect@checkemaildelivery.com")
     )
