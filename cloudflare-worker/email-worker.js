@@ -16,9 +16,80 @@
 
 export default {
   // Handle HTTP requests to the worker URL (health check / browser visits)
-  // Note: Contact form emails are now sent directly from backend to MailChannels API
-  // This worker focuses ONLY on inbound email processing via Email Routing
+  // This worker supports:
+  // 1) Backend -> /contact/send relay to MailChannels
+  // 2) Inbound email routing via email() handler
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    if (
+      request.method === "POST" &&
+      (url.pathname === "/contact/send" || url.pathname === "/contact/send/")
+    ) {
+      const providedSecret = request.headers.get("x-worker-secret") || "";
+      if ((env.WORKER_SECRET || "") && providedSecret !== env.WORKER_SECRET) {
+        return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      try {
+        const body = await request.json();
+        const toEmail = body?.to_email || env.CONTACT_EMAIL || "";
+        const subject = body?.subject || "Contact Form Submission";
+        const text = body?.text || "";
+        const html = body?.html || "";
+        const fromName = body?.from_name || "CheckEmailDelivery Contact";
+        const replyTo = body?.reply_to || "";
+
+        if (!toEmail) {
+          return new Response(JSON.stringify({ ok: false, error: "Missing recipient (to_email or CONTACT_EMAIL)" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const mailchannelsPayload = {
+          personalizations: [{ to: [{ email: toEmail }] }],
+          from: {
+            email: env.CONTACT_FROM_EMAIL || "noreply@checkemaildelivery.com",
+            name: fromName,
+          },
+          subject,
+          content: [
+            { type: "text/plain", value: text },
+            { type: "text/html", value: html },
+          ],
+          reply_to: replyTo ? { email: replyTo } : undefined,
+        };
+
+        const mcResp = await fetch("https://api.mailchannels.net/tx/v1/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mailchannelsPayload),
+        });
+
+        if (!mcResp.ok) {
+          const err = await mcResp.text();
+          return new Response(JSON.stringify({ ok: false, error: err }), {
+            status: 502,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err?.message || "Bad Request" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response("Email Worker is running. Handles inbound emails via Cloudflare Email Routing.", {
       status: 200,
       headers: { "Content-Type": "text/plain" },
