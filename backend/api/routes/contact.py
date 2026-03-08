@@ -93,58 +93,69 @@ Submitted: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
     }
 
 
-async def send_contact_email_via_worker(name: str, email: str, contact_type: str, message: str) -> None:
-    """Relay contact form email via Cloudflare Worker, which sends through MailChannels."""
-    if not settings.CLOUDFLARE_WORKER_URL:
-        raise Exception("CLOUDFLARE_WORKER_URL is not configured")
-
-    if "@" not in settings.CONTACT_EMAIL:
-        raise Exception(f"CONTACT_EMAIL is invalid: {settings.CONTACT_EMAIL}")
-
+async def send_contact_email_via_mailchannels(name: str, email: str, contact_type: str, message: str) -> None:
+    """
+    Send contact form email directly via MailChannels API.
+    
+    No worker relay needed - simple, direct, and reliable.
+    Right approach: eliminate extra hops, go straight to MailChannels.
+    """
     payload = _build_contact_payload(name, email, contact_type, message)
-    url = settings.CLOUDFLARE_WORKER_URL.rstrip("/") + "/contact/send"
-
-    logger.info("Sending contact email to %s via worker %s", settings.CONTACT_EMAIL, url)
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-Worker-Secret": settings.CLOUDFLARE_WORKER_SECRET or "",
+    
+    # Extract fields from payload
+    to_email = payload["to_email"]
+    subject = payload["subject"]
+    text = payload["text"]
+    html = payload["html"]
+    from_name = payload["from_name"]
+    reply_to = payload["reply_to"]
+    
+    # Build MailChannels payload following their API spec
+    mailchannels_payload = {
+        "personalizations": [
+            {
+                "to": [{"email": to_email}],
+            }
+        ],
+        "from": {
+            "email": "noreply@checkemaildelivery.com",
+            "name": from_name,
+        },
+        "subject": subject,
+        "content": [
+            {"type": "text/plain", "value": text},
+            {"type": "text/html", "value": html},
+        ],
     }
-    if settings.CLOUDFLARE_ACCESS_CLIENT_ID and settings.CLOUDFLARE_ACCESS_CLIENT_SECRET:
-        headers["CF-Access-Client-Id"] = settings.CLOUDFLARE_ACCESS_CLIENT_ID
-        headers["CF-Access-Client-Secret"] = settings.CLOUDFLARE_ACCESS_CLIENT_SECRET
-
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=False) as client:
+    
+    # Add reply-to if provided
+    if reply_to:
+        mailchannels_payload["reply_to"] = {"email": reply_to}
+    
+    # Log the attempt
+    logger.info(f"Sending contact email to {to_email} via MailChannels")
+    
+    # Send to MailChannels API
+    async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.post(
-            url,
-            json=payload,
-            headers=headers,
+            "https://api.mailchannels.net/tx/v1/send",
+            json=mailchannels_payload,
+            headers={"Content-Type": "application/json"},
         )
-
-    logger.info("Worker response: %s from POST %s", response.status_code, url)
-
+    
+    # Log response
+    logger.info(f"MailChannels response: {response.status_code}")
+    
+    # Only accept 2xx responses
     if response.status_code < 200 or response.status_code >= 300:
-        location = response.headers.get("location", "")
-        body_text = response.text
-        if 300 <= response.status_code < 400:
-            if "cloudflareaccess.com" in location:
-                raise Exception(
-                    "Worker is behind Cloudflare Access login. "
-                    "Configure service token headers in Railway env: "
-                    "CLOUDFLARE_ACCESS_CLIENT_ID and CLOUDFLARE_ACCESS_CLIENT_SECRET, "
-                    "or exclude this worker route from Access."
-                )
-            raise Exception(
-                f"Worker relay redirect: {response.status_code} location={location or 'missing'} body={body_text[:300]}"
-            )
-
         try:
             resp_body = response.json()
-        except Exception:
-            resp_body = body_text
-        raise Exception(f"Worker relay failed: {response.status_code} {resp_body}")
-
-    logger.info("Contact email relayed via Cloudflare Worker from %s (%s)", email, contact_type)
+        except:
+            resp_body = response.text
+        logger.error(f"MailChannels error: {response.status_code} {resp_body}")
+        raise Exception(f"MailChannels API failed: {response.status_code} {resp_body}")
+    
+    logger.info("✅ Contact email sent successfully to %s (%s)", to_email, contact_type)
 
 
 @router.post("/contact", response_model=ContactResponse)
@@ -170,8 +181,8 @@ async def handle_contact_form(body: ContactRequest) -> ContactResponse:
                 error="Message is too short. Please provide more details."
             )
         
-        # Send email through Cloudflare Worker relay
-        await send_contact_email_via_worker(
+        # Send email directly via MailChannels (no worker relay needed)
+        await send_contact_email_via_mailchannels(
             name=body.name.strip(),
             email=body.email,
             contact_type=body.contactType,

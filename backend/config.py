@@ -27,21 +27,11 @@ class Settings:
         default_factory=lambda: os.getenv("UPSTASH_REDIS_TOKEN", "")
     )
 
-    # Cloudflare Email Worker — shared secret for webhook verification
+    # Cloudflare Email Worker — no longer needed for contact form relay
+    # Worker now only handles inbound email processing via Email Routing
+    # Contact form emails go directly to MailChannels API
     CLOUDFLARE_WORKER_SECRET: str = field(
         default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_SECRET", "")
-    )
-
-    # Contact relay endpoint on Cloudflare Worker
-    CLOUDFLARE_WORKER_URL: str = field(
-        default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_URL", "")
-    )
-    # Optional: Cloudflare Access service token for protected worker routes
-    CLOUDFLARE_ACCESS_CLIENT_ID: str = field(
-        default_factory=lambda: os.getenv("CLOUDFLARE_ACCESS_CLIENT_ID", "")
-    )
-    CLOUDFLARE_ACCESS_CLIENT_SECRET: str = field(
-        default_factory=lambda: os.getenv("CLOUDFLARE_ACCESS_CLIENT_SECRET", "")
     )
 
     # SpamAssassin — runs inside the same container on Railway (localhost)
@@ -73,7 +63,7 @@ class Settings:
     # AI rate limits per IP
     AI_MAX_REQUESTS_PER_DAY: int = 10
 
-    # Contact Form destination
+    # Contact Form — send directly to MailChannels API (no worker relay)
     CONTACT_EMAIL: str = field(
         default_factory=lambda: os.getenv("CONTACT_EMAIL", "connect@checkemaildelivery.com")
     )
