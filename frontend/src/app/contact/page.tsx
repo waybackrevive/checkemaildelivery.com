@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import SiteHeader from "@/components/site-header";
@@ -6,6 +6,31 @@ import SiteFooter from "@/components/site-footer";
 import { toast } from "sonner";
 
 type ContactType = "feedback" | "complaint" | "buy-report" | "other";
+const CONTACT_EMAIL = "connect@checkemaildelivery.com";
+
+function buildMailtoLink({
+  name,
+  email,
+  contactType,
+  message,
+}: {
+  name: string;
+  email: string;
+  contactType: ContactType;
+  message: string;
+}) {
+  const subject = `[Contact Form] ${contactType.replace("-", " ")}`;
+  const body = [
+    `Name: ${name || "(not provided)"}`,
+    `Email: ${email || "(not provided)"}`,
+    `Type: ${contactType}`,
+    "",
+    "Message:",
+    message || "(empty)",
+  ].join("\n");
+
+  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -15,24 +40,50 @@ export default function ContactPage() {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitState, setSubmitState] = useState<"idle" | "success" | "error">("idle");
+
+  const trimmedMessage = formData.message.trim();
+  const isMessageValid = trimmedMessage.length >= 10;
+  const canSubmit =
+    !isSubmitting &&
+    formData.name.trim().length > 0 &&
+    formData.email.trim().length > 0 &&
+    isMessageValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isMessageValid) {
+      toast.error("Message should be at least 10 characters.");
+      return;
+    }
+
     setIsSubmitting(true);
+    setSubmitState("idle");
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
       const response = await fetch(`${apiUrl}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      const data = await response.json();
+      let data: { success?: boolean; error?: string } = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (response.ok && data.success) {
+        setSubmitState("success");
         toast.success("Message sent successfully! We'll get back to you soon.");
-        // Reset form
         setFormData({
           name: "",
           email: "",
@@ -40,11 +91,13 @@ export default function ContactPage() {
           message: "",
         });
       } else {
+        setSubmitState("error");
         toast.error(data.error || "Failed to send message. Please try again.");
       }
     } catch (error) {
+      setSubmitState("error");
       console.error("Contact form error:", error);
-      toast.error("Network error. Please check your connection and try again.");
+      toast.error("Could not send right now. Please use the direct email button below.");
     } finally {
       setIsSubmitting(false);
     }
@@ -86,7 +139,6 @@ export default function ContactPage() {
             feedback helps us decide what to build next and keeps us motivated.
           </p>
 
-          {/* Contact Form */}
           <div
             className="rounded-2xl border p-6 sm:p-8 mb-10"
             style={{
@@ -94,8 +146,19 @@ export default function ContactPage() {
               borderColor: "rgba(14, 166, 110, 0.15)",
             }}
           >
+            {submitState === "success" && (
+              <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                Thanks, your message has been submitted successfully.
+              </div>
+            )}
+
+            {submitState === "error" && (
+              <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                We could not submit your message right now. Please use the direct email option below to make sure we receive it.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name Field */}
               <div>
                 <label
                   htmlFor="name"
@@ -115,7 +178,6 @@ export default function ContactPage() {
                 />
               </div>
 
-              {/* Email Field */}
               <div>
                 <label
                   htmlFor="email"
@@ -135,7 +197,6 @@ export default function ContactPage() {
                 />
               </div>
 
-              {/* Contact Type Dropdown */}
               <div>
                 <label
                   htmlFor="contactType"
@@ -151,14 +212,13 @@ export default function ContactPage() {
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-navy focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition cursor-pointer bg-white"
                 >
-                  <option value="feedback">💬 Feedback</option>
-                  <option value="complaint">⚠️ Complaint</option>
-                  <option value="buy-report">📊 Buy Detailed Report</option>
-                  <option value="other">✉️ Other</option>
+                  <option value="feedback">Feedback</option>
+                  <option value="complaint">Complaint</option>
+                  <option value="buy-report">Buy Detailed Report</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 
-              {/* Message Field */}
               <div>
                 <label
                   htmlFor="message"
@@ -176,12 +236,14 @@ export default function ContactPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-navy placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition resize-none"
                   placeholder="Tell us more about your inquiry..."
                 />
+                <p className="mt-2 text-xs text-muted">
+                  Minimum 10 characters. Current: {trimmedMessage.length}
+                </p>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={!canSubmit}
                 className="w-full bg-brand hover:bg-brand/90 text-white font-semibold py-3.5 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
                 {isSubmitting ? (
@@ -214,21 +276,22 @@ export default function ContactPage() {
               </button>
             </form>
 
-            {/* Alternative Contact */}
-            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-              <p className="text-sm text-muted">
-                Or email us directly at{" "}
-                <a
-                  href="mailto:connect@checkemaildelivery.com"
-                  className="text-brand hover:text-brand/80 transition font-medium"
-                >
-                  connect@checkemaildelivery.com
-                </a>
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <p className="text-sm text-muted text-center mb-4">
+                If form submission fails, send the same message directly via your email app.
+              </p>
+              <a
+                href={buildMailtoLink(formData)}
+                className="block w-full text-center rounded-lg border border-brand/30 bg-brand/5 px-4 py-3 text-sm font-semibold text-brand hover:bg-brand/10 transition"
+              >
+                Send via Email App (Fallback)
+              </a>
+              <p className="text-xs text-muted text-center mt-3">
+                Direct email: <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand underline">{CONTACT_EMAIL}</a>
               </p>
             </div>
           </div>
 
-          {/* FAQ */}
           <div className="mt-16">
             <h2
               className="font-display text-navy mb-6"
@@ -266,7 +329,7 @@ export default function ContactPage() {
                 </h3>
                 <p className="text-muted">
                   Yes. The core deliverability test will always be free. We
-                  believe email diagnostics should be accessible to everyone —
+                  believe email diagnostics should be accessible to everyone -
                   solo founders, small businesses, and developers alike.
                 </p>
               </div>
@@ -277,10 +340,10 @@ export default function ContactPage() {
                 <p className="text-muted">
                   Use the form above or send an email to{" "}
                   <a
-                    href="mailto:connect@checkemaildelivery.com?subject=Bug%20Report"
+                    href={`mailto:${CONTACT_EMAIL}?subject=Bug%20Report`}
                     className="text-brand underline"
                   >
-                    connect@checkemaildelivery.com
+                    {CONTACT_EMAIL}
                   </a>{" "}
                   with a description of what happened. Screenshots help a lot!
                 </p>
