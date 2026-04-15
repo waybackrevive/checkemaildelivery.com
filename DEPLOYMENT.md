@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-Complete step-by-step guide to deploy CheckEmailDelivery.com to Railway (backend) + Vercel (frontend).
+Complete step-by-step guide to deploy CheckEmailDelivery.com to Render.com (backend) + Vercel (frontend).
 
 ---
 
@@ -11,24 +11,33 @@ Before you start, you need:
 - [x] GitHub repo with your code
 - [x] Upstash Redis account → [upstash.com/redis](https://upstash.com)
 - [x] Cloudflare account with your domain → [cloudflare.com](https://cloudflare.com)
-- [x] Railway account → [railway.app](https://railway.app)
+- [x] Render account → [render.com](https://render.com) (free, no credit card required)
 - [x] Vercel account → [vercel.com](https://vercel.com)
 - [x] Domain on Cloudflare DNS (required for Email Routing)
 
 ---
 
-## PART 1: Deploy Backend to Railway
+## PART 1: Deploy Backend to Render
 
-### 1.1 Create Railway Project
+> ⚠️ **Render free tier note:** Services sleep after 15 minutes of inactivity. The first request after sleep takes ~35-60 seconds (container wakeup + SpamAssassin init). For low-traffic usage this is fine. To prevent sleep, add your backend health check URL to [UptimeRobot](https://uptimerobot.com) (free) with a 14-minute ping interval.
 
-1. Go to [railway.app](https://railway.app) → **New Project**
-2. Select **"Deploy from GitHub repo"**
-3. Choose your repo: `checkemaildelivery.com`
-4. Railway will auto-detect the Dockerfile and start building
+### 1.1 Create Render Web Service
+
+1. Go to [render.com](https://render.com) → **New** → **Web Service**
+2. Connect your GitHub account and select repo: `checkemaildelivery.com`
+3. Configure the service:
+   - **Name**: `checkemaildelivery-backend`
+   - **Root Directory**: `backend`
+   - **Environment**: `Docker`
+   - **Instance Type**: `Free`
+4. Render auto-detects the `Dockerfile` — click **Create Web Service**
+
+> **Tip:** Alternatively, use the `render.yaml` at the repo root for one-click deploy:
+> In Render Dashboard → **New** → **Blueprint** → select your repo
 
 ### 1.2 Set Environment Variables
 
-Go to your Railway service → **Variables** tab → Add these:
+Go to your Render service → **Environment** tab → Add these:
 
 | Variable | Value | Example |
 |----------|-------|---------|
@@ -36,9 +45,10 @@ Go to your Railway service → **Variables** tab → Add these:
 | `UPSTASH_REDIS_URL` | From Upstash dashboard | `https://your-db.upstash.io` |
 | `UPSTASH_REDIS_TOKEN` | From Upstash dashboard | `AXqtACQ...` |
 | `CLOUDFLARE_WORKER_SECRET` | Random secret you generate | `my-super-secret-key-123` |
-| `SPAMASSASSIN_HOST` | Docker service name | `spamassassin` |
+| `SPAMASSASSIN_HOST` | SpamAssassin runs in the same container | `127.0.0.1` |
 | `SPAMASSASSIN_PORT` | SpamAssassin port | `783` |
 | `FRONTEND_URL` | Your frontend URLs (comma-separated) | See below ⬇️ |
+| `GROQ_API_KEY` | From console.groq.com (free) | `gsk_...` |
 
 **For `FRONTEND_URL`, use comma-separated list:**
 ```
@@ -46,20 +56,21 @@ https://checkemaildelivery.vercel.app,https://checkemaildelivery.com,http://loca
 ```
 👆 Replace `checkemaildelivery.vercel.app` with your actual Vercel URL
 
-### 1.3 Get Railway Backend URL
+### 1.3 Get Render Backend URL
 
-After deployment completes:
-1. Go to **Settings** → **Networking**
-2. Click **"Generate Domain"**
-3. Copy the URL (e.g., `https://checkemaildelivery-production.up.railway.app`)
-4. **Save this URL** — you'll need it for Vercel and Cloudflare Worker!
+After deployment completes (usually 3-5 min for first build):
+1. Go to your service dashboard
+2. Copy the URL shown at the top (e.g., `https://checkemaildelivery-backend.onrender.com`)
+3. **Save this URL** — you'll need it for Vercel and Cloudflare Worker!
 
 ### 1.4 Test Backend Health
 
 ```bash
-curl https://your-backend.up.railway.app/health
+curl https://checkemaildelivery-backend.onrender.com/health
 # Should return: {"status":"ok"}
 ```
+
+> 💡 First request may be slow if the service is waking from sleep. Wait 45 seconds and retry if needed.
 
 ---
 
@@ -78,16 +89,16 @@ Before clicking **Deploy**, add this environment variable:
 
 | Variable | Value |
 |----------|-------|
-| `NEXT_PUBLIC_API_URL` | Your Railway backend URL from step 1.3 |
+| `NEXT_PUBLIC_API_URL` | Your Render backend URL from step 1.3 |
 
-👆 Example: `https://checkemaildelivery-production.up.railway.app`
+👆 Example: `https://checkemaildelivery-backend.onrender.com`
 
 ⚠️ **CRITICAL REQUIREMENTS:**
 - ✅ **MUST start with `https://`** — Do not omit the protocol!
 - ✅ **No trailing slash** at the end
-- ❌ Wrong: `checkemaildelivery-production.up.railway.app` (missing https://)
-- ❌ Wrong: `https://checkemaildelivery-production.up.railway.app/` (trailing slash)
-- ✅ Correct: `https://checkemaildelivery-production.up.railway.app`
+- ❌ Wrong: `checkemaildelivery-backend.onrender.com` (missing https://)
+- ❌ Wrong: `https://checkemaildelivery-backend.onrender.com/` (trailing slash)
+- ✅ Correct: `https://checkemaildelivery-backend.onrender.com`
 
 ### 2.3 Deploy
 
@@ -97,7 +108,7 @@ Click **Deploy** → Wait 1-2 minutes → ✅ Done!
 
 After deployment:
 1. Copy the Vercel URL (e.g., `https://checkemaildelivery-production.vercel.app`)
-2. **Go back to Railway** → Variables → Update `FRONTEND_URL` to include this URL
+2. **Go back to Render** → Environment → Update `FRONTEND_URL` to include this URL
 
 ---
 
@@ -135,16 +146,16 @@ In Cloudflare Dashboard → **Workers & Pages** → Select `checkemaildelivery-e
 
 | Variable | Value |
 |----------|-------|
-| `BACKEND_URL` | Your Railway backend URL (e.g., `https://checkemaildelivery-production.up.railway.app`) |
-| `WORKER_SECRET` | Same secret you set as `CLOUDFLARE_WORKER_SECRET` in Railway |
+| `BACKEND_URL` | Your Render backend URL (e.g., `https://checkemaildelivery-backend.onrender.com`) |
+| `WORKER_SECRET` | Same secret you set as `CLOUDFLARE_WORKER_SECRET` in Render |
 
 Or via Wrangler CLI:
 ```bash
 wrangler secret put BACKEND_URL
-# Enter: https://your-backend.up.railway.app
+# Enter: https://checkemaildelivery-backend.onrender.com
 
 wrangler secret put WORKER_SECRET
-# Enter: same value as CLOUDFLARE_WORKER_SECRET in Railway
+# Enter: same value as CLOUDFLARE_WORKER_SECRET in Render
 ```
 
 ### 3.4 Create Email Routing Rule
@@ -183,12 +194,13 @@ If you have a custom domain (e.g., from Hostinger):
 
 ## PART 5: Verification Checklist
 
-### ✅ Backend (Railway)
+### ✅ Backend (Render)
 
-- [ ] Health check works: `curl https://your-backend.up.railway.app/health`
-- [ ] Swagger docs accessible: `https://your-backend.up.railway.app/docs`
-- [ ] All environment variables set (7 total)
+- [ ] Health check works: `curl https://checkemaildelivery-backend.onrender.com/health`
+- [ ] Swagger docs accessible: `https://checkemaildelivery-backend.onrender.com/docs`
+- [ ] All environment variables set (8 total)
 - [ ] CORS includes all frontend URLs
+- [ ] (Optional) UptimeRobot pinging `/health` every 14 min to prevent sleep
 
 ### ✅ Frontend (Vercel)
 
@@ -204,14 +216,14 @@ If you have a custom domain (e.g., from Hostinger):
 - [ ] Email Worker deployed and active
 - [ ] Worker secrets set (BACKEND_URL + WORKER_SECRET)
 - [ ] Routing rule points to worker (catch-all or specific)
-- [ ] Test email arrives at backend (check Railway logs for POST `/api/webhook/cloudflare`)
+- [ ] Test email arrives at backend (check Render logs for POST `/api/webhook/cloudflare`)
 
 ### ✅ Custom Domain (if applicable)
 
 - [ ] DNS records added (A + CNAME) in Cloudflare
 - [ ] Domain added in Vercel
 - [ ] SSL certificate issued
-- [ ] `FRONTEND_URL` in Railway updated with custom domain
+- [ ] `FRONTEND_URL` in Render updated with custom domain
 
 ---
 
@@ -219,7 +231,7 @@ If you have a custom domain (e.g., from Hostinger):
 
 ### "405 Method Not Allowed" or URL concatenation error
 
-**Problem:** Console shows URLs like `https://yoursite.vercel.app/yourbackend.railway.app/api/...`
+**Problem:** Console shows URLs like `https://yoursite.vercel.app/yourbackend.onrender.com/api/...`
 
 **Cause:** `NEXT_PUBLIC_API_URL` in Vercel is missing the `https://` protocol prefix.
 
@@ -227,8 +239,8 @@ If you have a custom domain (e.g., from Hostinger):
 1. Go to Vercel → Settings → Environment Variables
 2. Find `NEXT_PUBLIC_API_URL`
 3. Make sure it starts with `https://`:
-   - ❌ Wrong: `checkemaildelivery-production.up.railway.app`
-   - ✅ Correct: `https://checkemaildelivery-production.up.railway.app`
+   - ❌ Wrong: `checkemaildelivery-backend.onrender.com`
+   - ✅ Correct: `https://checkemaildelivery-backend.onrender.com`
 4. Save and **Redeploy**
 
 **Note:** Our code now auto-adds `https://` if missing, but it's best to set it correctly.
@@ -241,23 +253,25 @@ If you have a custom domain (e.g., from Hostinger):
 1. Open browser DevTools → Console tab
 2. Look for errors like:
    - `Failed to fetch` → Backend URL wrong or backend crashed
-   - `CORS policy` → `FRONTEND_URL` not set correctly in Railway
-3. Verify `NEXT_PUBLIC_API_URL` in Vercel matches Railway backend URL
+   - `CORS policy` → `FRONTEND_URL` not set correctly in Render
+3. Verify `NEXT_PUBLIC_API_URL` in Vercel matches Render backend URL
 
 **Fix:**
-1. Go to Railway → Variables → Check `FRONTEND_URL` includes your Vercel URL
+1. Go to Render → Environment → Check `FRONTEND_URL` includes your Vercel URL
 2. Go to Vercel → Settings → Environment Variables → Check `NEXT_PUBLIC_API_URL`
 3. Redeploy both services
 
-### Backend crashes on Railway
+### Backend crashes on Render
 
 **Check logs:**
-Railway Dashboard → your service → Deployments → View Logs
+Render Dashboard → your service → **Logs** tab
 
 **Common issues:**
-- Missing environment variables → Add them in Variables tab
-- Port binding error → Railway provides `$PORT` env var (our code handles this)
+- Missing environment variables → Add them in **Environment** tab
+- Memory pressure from SpamAssassin → Add `--max-children=1` flag in `start.sh` if OOM
+- Port binding error → Render provides `$PORT` env var (our code handles this automatically)
 - Redis connection failed → Check `UPSTASH_REDIS_URL` and `UPSTASH_REDIS_TOKEN`
+- Service sleeping → First request after 15 min idle takes ~45 sec, this is normal
 
 ### Webhook not receiving emails
 
@@ -265,9 +279,9 @@ Railway Dashboard → your service → Deployments → View Logs
 1. Cloudflare Dashboard → Email → Email Routing → Check status is active
 2. Workers & Pages → Select worker → Check it's deployed and active
 3. Worker logs: Workers & Pages → your worker → Logs → Real-time
-4. Send test email → Check Railway logs for POST `/api/webhook/cloudflare`
-5. Verify `WORKER_SECRET` in Cloudflare matches `CLOUDFLARE_WORKER_SECRET` in Railway
-6. Verify `BACKEND_URL` in worker points to correct Railway URL
+4. Send test email → Check Render logs for POST `/api/webhook/cloudflare`
+5. Verify `WORKER_SECRET` in Cloudflare matches `CLOUDFLARE_WORKER_SECRET` in Render
+6. Verify `BACKEND_URL` in worker points to correct Render URL
 
 ### Domain not working
 
@@ -282,41 +296,42 @@ Railway Dashboard → your service → Deployments → View Logs
 
 | Service | Tier | Monthly Cost |
 |---------|------|--------------|
-| Railway | Free / Hobby | $0 - $5 |
+| Render | Free forever | **$0** |
 | Vercel | Hobby | $0 |
 | Upstash Redis | Free | $0 (10K requests/day) |
 | Cloudflare Email Routing | Free forever | $0 (unlimited) |
 | Cloudflare Workers | Free | $0 (100K requests/day) |
 | Domain | Annual | ~$10/year |
-| **TOTAL** | | **$0 - $5/mo** |
+| **TOTAL** | | **$0/mo** |
 
 ---
 
 ## Environment Variables Quick Reference
 
-### Railway (Backend) — 7 variables
+### Render (Backend) — 8 variables
 
 ```bash
 MAIL_DOMAIN=checkemaildelivery.com
 UPSTASH_REDIS_URL=https://your-db.upstash.io
 UPSTASH_REDIS_TOKEN=AXqtACQ...
 CLOUDFLARE_WORKER_SECRET=your-random-secret-here
-SPAMASSASSIN_HOST=spamassassin
+SPAMASSASSIN_HOST=127.0.0.1
 SPAMASSASSIN_PORT=783
 FRONTEND_URL=https://yourdomain.vercel.app,https://yourdomain.com
+GROQ_API_KEY=gsk_...
 ```
 
 ### Vercel (Frontend) — 1 variable
 
 ```bash
-NEXT_PUBLIC_API_URL=https://your-backend.up.railway.app
+NEXT_PUBLIC_API_URL=https://checkemaildelivery-backend.onrender.com
 ```
 
 ### Cloudflare Worker — 2 variables
 
 ```bash
-BACKEND_URL=https://your-backend.up.railway.app
-WORKER_SECRET=your-random-secret-here  # Must match CLOUDFLARE_WORKER_SECRET in Railway
+BACKEND_URL=https://checkemaildelivery-backend.onrender.com
+WORKER_SECRET=your-random-secret-here  # Must match CLOUDFLARE_WORKER_SECRET in Render
 ```
 
 ---
@@ -324,7 +339,7 @@ WORKER_SECRET=your-random-secret-here  # Must match CLOUDFLARE_WORKER_SECRET in 
 ## Need Help?
 
 If deployment fails:
-1. Check Railway logs (Deployments → View Logs)
+1. Check Render logs (Dashboard → your service → Logs tab)
 2. Check Vercel logs (Deployments → Function Logs)
 3. Check Cloudflare Worker logs (Workers & Pages → Logs → Real-time)
 4. Check browser console (F12 → Console tab)

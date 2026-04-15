@@ -1,0 +1,31 @@
+# Render.com Infrastructure as Code
+# Deploy backend to Render free tier
+# Docs: https://render.com/docs/infrastructure-as-code
+
+services:
+  - type: web
+    name: checkemaildelivery-backend
+    env: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+
+    # Sensitive values (sync: false) must be set manually in Render dashboard
+    # Non-sensitive values are pre-filled below
+    envVars:
+      - key: MAIL_DOMAIN
+        value: checkemaildelivery.com
+      - key: SPAMASSASSIN_HOST
+        value: "127.0.0.1"
+      - key: SPAMASSASSIN_PORT
+        value: "783"
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: UPSTASH_REDIS_TOKEN
+        sync: false
+      - key: CLOUDFLARE_WORKER_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

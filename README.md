@@ -168,7 +168,7 @@ ngrok http 8000
 
 Then update the Worker's `BACKEND_URL` environment variable to your ngrok URL.
 
-**For production**, set `BACKEND_URL` to your Railway URL.
+**For production**, set `BACKEND_URL` to your Render backend URL.
 
 ### PHASE 5 — Test the Full Flow
 
@@ -205,25 +205,26 @@ Then update the Worker's `BACKEND_URL` environment variable to your ngrok URL.
 |---|-----------|----------|------|-------|
 | 1 | Redis | Upstash | Free | Already done in Phase 1 |
 | 2 | Email | Cloudflare Email Routing | **Free forever** | Already done in Phase 1 |
-| 3 | Backend | [Railway](https://railway.app) | ~$5/mo | Deploy first — frontend needs its URL |
-| 4 | Frontend | [Vercel](https://vercel.com) | Free | Set `NEXT_PUBLIC_API_URL` to Railway URL |
+| 3 | Backend | [Render](https://render.com) | Free | Deploy first — frontend needs its URL |
+| 4 | Frontend | [Vercel](https://vercel.com) | Free | Set `NEXT_PUBLIC_API_URL` to Render URL |
 | 5 | DNS | Cloudflare | Free | Point `checkemaildelivery.com` → Vercel |
 
 ### Step-by-Step
 
 1. **Push to GitHub** — `git push` (make sure commit includes all AI writer + rate-limit updates)
-2. **Backend → Railway** 
-   - Import repo, set root to `backend`
+2. **Backend → Render** 
+   - New Web Service → connect repo → Root Directory: `backend` → Environment: `Docker` → Plan: `Free`
    - Add env vars:
      * `UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN` (from Phase 1)
      * `GROQ_API_KEY` (free from console.groq.com)
      * `MAIL_DOMAIN`, `CLOUDFLARE_WORKER_SECRET`
+     * `SPAMASSASSIN_HOST=127.0.0.1`, `SPAMASSASSIN_PORT=783`
    - Ensure UTC rate-limiting logic is in production (Redis-backed)
 3. **Frontend → Vercel** 
    - Import repo, set root to `frontend`
-   - Add env var: `NEXT_PUBLIC_API_URL` = `https://your-api.up.railway.app`
-4. **Cloudflare Worker** — Update `BACKEND_URL` to your Railway URL
-5. **Backend CORS** — Set `FRONTEND_URL=https://checkemaildelivery.com` in Railway env vars
+   - Add env var: `NEXT_PUBLIC_API_URL` = `https://checkemaildelivery-backend.onrender.com`
+4. **Cloudflare Worker** — Update `BACKEND_URL` to your Render URL
+5. **Backend CORS** — Set `FRONTEND_URL=https://checkemaildelivery.com` in Render env vars
 6. **DNS** — In Cloudflare, add CNAME: `@ → cname.vercel-dns.com`
 
 ### Production Readiness Checklist
@@ -236,10 +237,10 @@ Then update the Worker's `BACKEND_URL` environment variable to your ngrok URL.
 - ✅ All API responses include `reset_at_utc` ISO timestamp for frontend countdown
 - ✅ Spam detection works with explicit word list (20+ triggers)
 - ✅ Regenerate button allows retry when spam detected
-- ⏳ **Deploy** commit `f1b0a94` (or latest) to Railway
+- ⏳ **Deploy** latest commit to Render (auto-deploys on push if GitHub connected)
 - ⏳ **Verify** home page shows "Blog" and "AI Email Writer" in header
 - ⏳ **Verify** AI writer page displays UTC reset time (e.g., "Resets at 14:22 UTC")
-- ⏳ **Monitor** Railway logs for any Groq API errors (should use `llama-3.3-70b-versatile`)
+- ⏳ **Monitor** Render logs for any Groq API errors (should use `llama-3.3-70b-versatile`)
 
 ---
 
@@ -300,7 +301,7 @@ If first model times out or errors, next one is tried automatically. User sees p
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `BACKEND_URL` | `https://your-api.up.railway.app` | Where to send intercepted emails |
+| `BACKEND_URL` | `https://checkemaildelivery-backend.onrender.com` | Where to send intercepted emails |
 | `WORKER_SECRET` | Same as `CLOUDFLARE_WORKER_SECRET` in backend | Auth validation |
 
 ### Frontend (`frontend/.env.local`)
@@ -321,7 +322,7 @@ If first model times out or errors, next one is tried automatically. User sees p
 | **Email Analysis** | Authentication-Results parsing, checkdmarc, SpamAssassin, BeautifulSoup | SPF/DKIM/DMARC, blacklist checks, spam scoring |
 | **Storage** | Upstash Redis | Rate limits (UTC-buckets), email data (auto-expire 1h) |
 | **Email Routing** | Cloudflare Email Routing + Worker | Free forever email routing + webhook to backend |
-| **Deployment** | Railway (backend), Vercel (frontend), Cloudflare (routing) | Production infrastructure |
+| **Deployment** | Render (backend, free), Vercel (frontend), Cloudflare (routing) | Production infrastructure |
 
 ---
 

@@ -74,7 +74,7 @@ In Cloudflare Dashboard → **Workers & Pages** → your worker → **Settings**
 
 | Variable | Value | Encrypt? |
 |----------|-------|----------|
-| `BACKEND_URL` | `https://your-api.up.railway.app` | No |
+| `BACKEND_URL` | `https://checkemaildelivery-backend.onrender.com` | No |
 | `WORKER_SECRET` | Any random string (e.g., `ced-wk-a8f3b2c1d4e5`) | **Yes** |
 
 > **Important:** The `WORKER_SECRET` must match `CLOUDFLARE_WORKER_SECRET` in your backend `.env`.
@@ -206,7 +206,7 @@ ngrok http 8000
 ```
 backend/
 ├── main.py                     # FastAPI app entry point
-├── run.py                      # Production entry (Railway uses this)
+├── run.py                      # Production entry (Render/Docker uses this)
 ├── config.py                   # Settings from environment variables
 ├── Dockerfile                  # Python 3.11 container
 ├── docker-compose.yml          # API + SpamAssassin
@@ -245,15 +245,18 @@ cloudflare-worker/
 
 ---
 
-## Production Deployment (Railway)
+## Production Deployment (Render)
 
-### 1. Deploy to Railway
+### 1. Deploy to Render
 
-1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub**
-2. Select your repo → set root directory to `backend`
-3. (Optional) Add a **SpamAssassin service**:
-   - Click **+ New** → **Docker Image** → `instantlinux/spamassassin:latest`
-   - Note the internal hostname (e.g., `spamassassin.railway.internal`)
+1. Go to [render.com](https://render.com) → **New** → **Web Service**
+2. Connect GitHub → select your repo → set **Root Directory** to `backend`
+3. Set **Environment** to `Docker` and **Instance Type** to `Free`
+4. Click **Create Web Service** — Render auto-detects the `Dockerfile`
+
+> SpamAssassin runs **inside the same Docker container** (started by `start.sh`). No separate service needed.
+
+> ⚠️ **Free tier sleeps** after 15 min inactivity. First request after wake takes ~45 sec. Use [UptimeRobot](https://uptimerobot.com) (free) to ping `/health` every 14 minutes if needed.
 
 ### 2. Set Environment Variables
 
@@ -263,21 +266,21 @@ cloudflare-worker/
 | `UPSTASH_REDIS_URL` | `https://your-db.upstash.io` |
 | `UPSTASH_REDIS_TOKEN` | `your-token` |
 | `CLOUDFLARE_WORKER_SECRET` | Same secret as in Worker settings |
-| `SPAMASSASSIN_HOST` | `spamassassin.railway.internal` |
+| `SPAMASSASSIN_HOST` | `127.0.0.1` |
 | `SPAMASSASSIN_PORT` | `783` |
 | `FRONTEND_URL` | `https://checkemaildelivery.com` |
+| `GROQ_API_KEY` | From console.groq.com (free) |
 
 ### 3. Update Worker BACKEND_URL
 
-After deploying to Railway, update the Worker env variable:
-- `BACKEND_URL` = `https://your-api.up.railway.app`
+After deploying to Render, update the Worker env variable:
+- `BACKEND_URL` = `https://checkemaildelivery-backend.onrender.com`
 
 ### 4. Cost
 
 | Service | Cost |
 |---------|------|
-| Railway (API) | ~$5/mo |
-| SpamAssassin | included in Railway |
+| Render (API + SpamAssassin) | **Free** (permanent free tier) |
 | Upstash Redis | Free (10K req/day) |
 | Cloudflare Email Routing | **Free forever** |
 

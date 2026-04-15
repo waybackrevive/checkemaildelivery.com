@@ -67,5 +67,5 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check for Docker/Railway."""
+    """Health check for Docker/Render."""
     return {"status": "ok"}

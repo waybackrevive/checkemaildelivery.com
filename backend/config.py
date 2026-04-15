@@ -32,7 +32,7 @@ class Settings:
         default_factory=lambda: os.getenv("CLOUDFLARE_WORKER_SECRET", "")
     )
 
-    # SpamAssassin — runs inside the same container on Railway (localhost)
+    # SpamAssassin — runs inside the same container on Render (localhost)
     SPAMASSASSIN_HOST: str = field(
         default_factory=lambda: os.getenv("SPAMASSASSIN_HOST", "127.0.0.1")
     )

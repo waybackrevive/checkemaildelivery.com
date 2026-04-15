@@ -1,4 +1,4 @@
-"""Entry point for Railway / Docker deployment."""
+"""Entry point for Render / Docker deployment."""
 import os
 import uvicorn
 
